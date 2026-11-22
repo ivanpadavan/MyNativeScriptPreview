@@ -4,7 +4,7 @@ An iOS NativeScript shell for applications transferred as one text package.
 The shell and its compiled native dependencies are installed once. Imported
 projects execute locally without QR codes, npm, or a development server.
 
-**Status:** implementation prepared; no successful CI run or IPA is claimed yet.
+**Status:** implementation published; CI bootstrapping is in progress. No successful native build or IPA is claimed yet.
 The first milestone is **GPU Check only**. See [PLAN.md](PLAN.md).
 
 ## One flow
@@ -36,10 +36,10 @@ Source editing and uploading files are the only local development operations.
    Commit its `Podfile.lock` as `ci/Podfile.lock`.
 4. Rerun **Preview CI**. Release artifact publication requires all locks to be
    committed, simulator scenarios to pass and the unsigned device IPA to verify.
-5. Download `preview-unsigned-<commit>`. It contains the IPA, GPU package,
+5. Download `preview-verified-<commit>`. It contains the IPA, GPU package,
    requested entitlements, capability report, and signing notes.
 
-Node is fixed in `.node-version`; CI selects Xcode 26.6 and an iOS 26.5 simulator.
+Node is fixed in `.node-version`; Apple tools and the simulator are fixed in `ci/toolchain.json`.
 Dependency versions become exact through CI-generated lockfiles. CocoaPods
 resolution must match the committed lock in both simulator and device jobs.
 Simulator tests use ad-hoc signing without an Apple account. The **device IPA**
@@ -48,6 +48,27 @@ is unsigned, built for arm64/iPhoneOS, and contains no provisioning profile.
 All test logs and `.xcresult` evidence are retained. The pipeline never runs a
 phone-side dev server. It verifies that the GPU example code and text package
 are not present in the shell app bundle.
+
+## CI cost and reuse
+
+- Documentation-only pushes run just the lightweight change detector on Linux.
+- Dependency jobs run separately from compilation. JS caches are keyed by OS,
+  architecture, Node version, manifest and npm lock; Ruby caches use the Ruby
+  version and Gemfile lock. Install commands run only on exact cache misses.
+- Native platform scaffolding and CocoaPods dependencies have their own cache,
+  separate from shell source and compiled app outputs.
+- The simulator app and unsigned IPA are built only when the shell content key
+  is missing. It covers host sources, the package protocol, native resources,
+  native build/verification scripts, lockfiles and the pinned Apple toolchain.
+- Example, exporter and UI-test edits reuse the exact prebuilt shell. Examples
+  build on Linux. A standalone XCUITest runner controls the preinstalled app by
+  bundle ID and never rebuilds the NativeScript shell.
+- Missing/evicted caches are rebuilt through the dependency/build jobs; no
+  broad restore-prefix fallback accepts stale dependency or native outputs.
+- The internal `native-shell-build-only` artifact is **not** verified. Only the
+  downstream `preview-verified-*` artifact is published after integration passes.
+- Native provenance in `capabilities.json` identifies the original build. The
+  successful workflow identifies the current example/test revision that used it.
 
 ## Project contract
 

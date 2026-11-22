@@ -1,0 +1,6 @@
+{
+  "xcode": "26.6",
+  "ruby": "3.3.6",
+  "simulatorRuntime": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+  "simulatorDeviceType": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
+}

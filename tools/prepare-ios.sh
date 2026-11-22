@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${CI:-}" != "true" ]]; then echo 'iOS preparation is CI-only.' >&2; exit 1; fi
-mkdir -p artifacts platforms/ios
+mkdir -p artifacts
+test -d platforms/ios/MyNativeScriptPreview.xcodeproj
 if [[ -f ci/Podfile.lock ]]; then
   cp ci/Podfile.lock platforms/ios/Podfile.lock
 elif [[ -f artifacts/pod-lock/Podfile.lock ]]; then

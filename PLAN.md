@@ -14,6 +14,7 @@
 
 - [ ] Commit the CocoaPods lockfile from the first iOS preparation in CI; require unchanged resolution on subsequent runs.
 - [ ] Pass package/source checks, simulator integration tests, and unsigned IPA verification in CI.
+- [ ] Verify rational CI routing: documentation skips builds, dependency-cache hits skip installs, and example/test-only changes reuse the compiled native shell.
 - [ ] Make successful IPA, GPU text package, requested entitlements, capability report, and test evidence available as CI artifacts.
 - [ ] First-stage acceptance: import the GPU package through the real paste UI, run `checkGPU`, return, restart, and repeat offline. API unavailability on the iOS 26+ test runner is a failure, not a substitute for a successful check.
 - [ ] Stop implementation after the GPU milestone; do not start the following examples automatically.

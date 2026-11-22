@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "types": ["@nativescript/types"],
+    "noEmit": true
+  },
+  "include": ["src/**/*.js", "nativescript.config.ts"]
+}

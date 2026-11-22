@@ -9,140 +9,287 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: preview-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   CI: 'true'
   NS_CLI_NO_ANALYTICS: '1'
   BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
 
 jobs:
-  integration:
-    name: iOS integration and source checks
-    runs-on: macos-26
-    timeout-minutes: 45
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      work: ${{ steps.scope.outputs.work }}
+      node_hash: ${{ steps.scope.outputs.node_hash }}
+      platform_hash: ${{ steps.scope.outputs.platform_hash }}
+      shell_key: ${{ steps.scope.outputs.shell_key }}
+      shell_hit: ${{ steps.shell.outputs.cache-hit }}
+      xcode: ${{ steps.scope.outputs.xcode }}
+      ruby: ${{ steps.scope.outputs.ruby }}
+      simulator_runtime: ${{ steps.scope.outputs.simulator_runtime }}
+      simulator_device: ${{ steps.scope.outputs.simulator_device }}
     steps:
       - uses: actions/checkout@v4
-      - name: Require committed dependency locks
+        with:
+          fetch-depth: 0
+      - name: Detect relevant changes and content keys
+        id: scope
+        run: python3 tools/ci-scope.py
+      - uses: actions/cache/restore@v4
+        id: shell
+        if: steps.scope.outputs.work == 'true'
+        with:
+          path: artifacts/shell
+          key: ${{ steps.scope.outputs.shell_key }}
+          lookup-only: true
+
+  dependencies:
+    name: Dependencies (${{ matrix.label }})
+    needs: scope
+    if: needs.scope.outputs.work == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            label: linux
+          - runner: macos-26
+            label: macos
+    runs-on: ${{ matrix.runner }}
+    concurrency:
+      group: deps-${{ matrix.label }}-${{ needs.scope.outputs.node_hash }}-${{ needs.scope.outputs.platform_hash }}
+      cancel-in-progress: false
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require CI-generated dependency locks
         run: |
           test -f package-lock.json
           test -f Gemfile.lock
       - uses: actions/setup-node@v4
+        if: matrix.label == 'linux' || needs.scope.outputs.shell_hit != 'true'
         with:
           node-version-file: .node-version
           cache: npm
+      - uses: actions/cache@v4
+        id: npm
+        if: matrix.label == 'linux' || needs.scope.outputs.shell_hit != 'true'
+        with:
+          path: node_modules
+          key: node-${{ runner.os }}-${{ runner.arch }}-${{ needs.scope.outputs.node_hash }}
+      - name: Install JS dependencies only on a dependency-cache miss
+        if: (matrix.label == 'linux' || needs.scope.outputs.shell_hit != 'true') && steps.npm.outputs.cache-hit != 'true'
+        run: npm ci
+      - uses: ruby/setup-ruby@v1
+        if: matrix.label == 'macos'
+        with:
+          ruby-version: ${{ needs.scope.outputs.ruby }}
+      - uses: actions/cache@v4
+        id: gems
+        if: matrix.label == 'macos'
+        with:
+          path: vendor/bundle
+          key: gems-macos-arm64-ruby${{ needs.scope.outputs.ruby }}-${{ hashFiles('Gemfile', 'Gemfile.lock') }}
+      - name: Install Ruby dependencies only on a dependency-cache miss
+        if: matrix.label == 'macos'
+        run: |
+          bundle config set --local path vendor/bundle
+          if [[ '${{ steps.gems.outputs.cache-hit }}' != 'true' ]]; then BUNDLE_FROZEN=true bundle install; fi
+      - name: Select Xcode
+        if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true'
+        run: sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
+      - uses: actions/cache@v4
+        id: platform
+        if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true'
+        with:
+          path: platforms/ios
+          key: ios-platform-v1-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
+      - name: Prepare native platform dependencies only on a dependency-cache miss
+        if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true' && steps.platform.outputs.cache-hit != 'true'
+        run: bash tools/prepare-platform.sh
+
+  checks:
+    name: Sources and GPU text package
+    needs: [scope, dependencies]
+    if: needs.scope.outputs.work == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-${{ runner.os }}-${{ runner.arch }}-${{ needs.scope.outputs.node_hash }}
+          fail-on-cache-miss: true
+      - name: Build example and check source syntax/types
+        run: |
+          npm run example:build
+          npm run ci:source
+          npx --no-install tsc --noEmit --project ci/tsconfig.examples.json
+          python3 -m py_compile tools/check-no-embedded-example.py tools/verify-ipa.py tools/ci-scope.py
+          for script in tools/*.sh; do bash -n "$script"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpu-text-package
+          path: dist/gpu-check.preview.txt
+          if-no-files-found: error
+
+  native:
+    name: Native shell (build or reuse)
+    needs: [scope, dependencies]
+    if: needs.scope.outputs.work == 'true'
+    runs-on: macos-26
+    concurrency:
+      group: native-${{ needs.scope.outputs.shell_key }}
+      cancel-in-progress: false
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: shell
+        with:
+          path: artifacts/shell
+          key: ${{ needs.scope.outputs.shell_key }}
+      - uses: actions/setup-node@v4
+        if: steps.shell.outputs.cache-hit != 'true'
+        with:
+          node-version-file: .node-version
+      - uses: actions/cache/restore@v4
+        if: steps.shell.outputs.cache-hit != 'true'
+        with:
+          path: node_modules
+          key: node-${{ runner.os }}-${{ runner.arch }}-${{ needs.scope.outputs.node_hash }}
+          fail-on-cache-miss: true
+      - uses: ruby/setup-ruby@v1
+        if: steps.shell.outputs.cache-hit != 'true'
+        with:
+          ruby-version: ${{ needs.scope.outputs.ruby }}
+      - uses: actions/cache/restore@v4
+        if: steps.shell.outputs.cache-hit != 'true'
+        with:
+          path: vendor/bundle
+          key: gems-macos-arm64-ruby${{ needs.scope.outputs.ruby }}-${{ hashFiles('Gemfile', 'Gemfile.lock') }}
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v4
+        if: steps.shell.outputs.cache-hit != 'true'
+        with:
+          path: platforms/ios
+          key: ios-platform-v1-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
+          fail-on-cache-miss: true
+      - name: Build shell and verify unsigned IPA only on a shell-cache miss
+        if: steps.shell.outputs.cache-hit != 'true'
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
+          bundle config set --local path vendor/bundle
+          bash tools/prepare-ios.sh
+          bash tools/build-simulator.sh
+          bash tools/build-unsigned.sh
+          npm run ci:verify-ipa
+          node tools/capability-report.mjs
+          cp artifacts/MyNativeScriptPreview-unsigned.ipa artifacts/requested-entitlements.plist artifacts/capabilities.json artifacts/shell/
+          mkdir -p artifacts/shell/locks
+          if [[ -f platforms/ios/Podfile.lock ]]; then cp platforms/ios/Podfile.lock artifacts/shell/locks/Podfile.lock; fi
+      - name: Report native reuse
+        run: echo 'Native shell cache hit = ${{ steps.shell.outputs.cache-hit }}; key = ${{ needs.scope.outputs.shell_key }}' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-shell-build-only
+          path: artifacts/shell/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-diagnostics
+          path: |
+            artifacts/*.log
+            platforms/ios/Podfile.lock
+          if-no-files-found: ignore
+
+  integration:
+    name: Real-paste UI integration
+    needs: [scope, dependencies, checks, native]
+    if: needs.scope.outputs.work == 'true'
+    runs-on: macos-26
+    env:
+      PREVIEW_SIMULATOR_RUNTIME: ${{ needs.scope.outputs.simulator_runtime }}
+      PREVIEW_SIMULATOR_DEVICE: ${{ needs.scope.outputs.simulator_device }}
+    concurrency:
+      group: integration-${{ github.ref }}
+      cancel-in-progress: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.6'
-          bundler-cache: true
-      - name: Select Xcode
-        run: sudo xcode-select --switch /Applications/Xcode_26.6.app/Contents/Developer
-      - name: Install locked JavaScript dependencies
-        run: npm ci
-      - name: Build the GPU text package
-        run: npm run example:build
-      - name: Check sources and example types
+          ruby-version: ${{ needs.scope.outputs.ruby }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: vendor/bundle
+          key: gems-macos-arm64-ruby${{ needs.scope.outputs.ruby }}-${{ hashFiles('Gemfile', 'Gemfile.lock') }}
+          fail-on-cache-miss: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-shell-build-only
+          path: artifacts/shell
+      - uses: actions/download-artifact@v4
+        with:
+          name: gpu-text-package
+          path: dist
+      - name: Build standalone UI runner and exercise the prebuilt shell
         run: |
-          npm run ci:source
-          npx tsc --noEmit --project ci/tsconfig.examples.json
-          ruby -c tools/add-ui-tests.rb
-          python3 -m py_compile tools/check-no-embedded-example.py tools/verify-ipa.py
-          for script in tools/*.sh; do bash -n "$script"; done
-      - name: Prepare iOS and capture pod lock
-        run: bash tools/prepare-ios.sh
-      - name: Configure native UI integration tests
-        run: bundle exec ruby tools/add-ui-tests.rb
-      - name: Run real-paste integration scenarios
-        run: bash tools/run-integration.sh
-      - name: Verify the example is not embedded in the simulator shell
-        run: python3 tools/check-no-embedded-example.py artifacts/simulator-app
-      - name: Upload test evidence
+          sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
+          bundle config set --local path vendor/bundle
+          bundle exec ruby tools/add-ui-tests.rb
+          bash tools/run-integration.sh
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: integration-evidence-${{ github.sha }}
           path: |
             artifacts/integration.xcresult/
             artifacts/*.log
-            dist/gpu-check.preview.txt
           if-no-files-found: warn
           retention-days: 14
-      - name: Stage dependency lock evidence
-        if: always()
-        run: |
-          mkdir -p artifacts/pod-lock
-          if [ -f platforms/ios/Podfile.lock ]; then cp platforms/ios/Podfile.lock artifacts/pod-lock/Podfile.lock; fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ios-pod-lock
-          path: artifacts/pod-lock/
-          if-no-files-found: ignore
 
-  device:
-    name: Unsigned arm64 device IPA
-    needs: integration
-    runs-on: macos-26
-    timeout-minutes: 45
+  publish:
+    name: Publish verified first-case artifacts
+    needs: [scope, checks, native, integration]
+    if: needs.scope.outputs.work == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/download-artifact@v4
         with:
-          node-version-file: .node-version
-          cache: npm
-      - uses: ruby/setup-ruby@v1
+          name: native-shell-build-only
+          path: artifacts/shell
+      - uses: actions/download-artifact@v4
         with:
-          ruby-version: '3.3.6'
-          bundler-cache: true
-      - name: Select Xcode
-        run: sudo xcode-select --switch /Applications/Xcode_26.6.app/Contents/Developer
-      - name: Install locked JavaScript dependencies
-        run: npm ci
-      - name: Use the integration job's exact pod resolution
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-pod-lock
-          path: artifacts/pod-lock
-      - name: Build example and prepare iOS
+          name: gpu-text-package
+          path: dist
+      - name: Require committed native dependency resolution
         run: |
-          npm run example:build
-          bash tools/prepare-ios.sh
-      - name: Build unsigned device IPA
-        run: bash tools/build-unsigned.sh
-      - name: Verify device artifact and export capability report
-        run: |
-          npm run ci:verify-ipa
-          node tools/capability-report.mjs
-      - name: Require committed CocoaPods lock
-        run: |
-          if [ ! -f ci/Podfile.lock ]; then
-            echo 'Commit ios-pod-lock/Podfile.lock as ci/Podfile.lock and rerun. First pod resolution is not a release.' >&2
-            exit 1
+          if [[ -f artifacts/shell/locks/Podfile.lock ]]; then
+            test -f ci/Podfile.lock
+            cmp ci/Podfile.lock artifacts/shell/locks/Podfile.lock
           fi
-      - name: Publish successful artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: preview-unsigned-${{ github.sha }}
+          name: preview-verified-${{ github.sha }}
           path: |
-            artifacts/MyNativeScriptPreview-unsigned.ipa
-            artifacts/requested-entitlements.plist
-            artifacts/capabilities.json
+            artifacts/shell/MyNativeScriptPreview-unsigned.ipa
+            artifacts/shell/requested-entitlements.plist
+            artifacts/shell/capabilities.json
             dist/gpu-check.preview.txt
             ci/signing.md
           if-no-files-found: error
           retention-days: 30
-      - name: Write usage instructions
+      - name: Usage and provenance
         run: |
-          echo '## Preview ready' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Sign and install the unsigned IPA separately with your own profile.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Open gpu-check.preview.txt, copy the entire text, paste in the shell, tap Запустить, then Проверить GPU.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'The simulator run checks the real API bridge; it does not prove physical background GPU execution or Personal Team signing.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload device diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: device-diagnostics-${{ github.sha }}
-          path: artifacts/*.log
-          if-no-files-found: ignore
+          echo '## Verified Preview package' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Copy the entire gpu-check.preview.txt, paste in the installed shell, tap Запустить and Проверить GPU.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The device IPA is unsigned; simulator tests do not prove free-Apple-ID signing or physical background GPU execution.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Shell content key: ${{ needs.scope.outputs.shell_key }}. The capability report identifies the original native build; this run verifies its use with the current example.' >> "$GITHUB_STEP_SUMMARY"

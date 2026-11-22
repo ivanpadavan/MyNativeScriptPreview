@@ -47,6 +47,9 @@ jobs:
         run: |
           npm run ci:source
           npx tsc --noEmit --project ci/tsconfig.examples.json
+          ruby -c tools/add-ui-tests.rb
+          python3 -m py_compile tools/check-no-embedded-example.py tools/verify-ipa.py
+          for script in tools/*.sh; do bash -n "$script"; done
       - name: Prepare iOS and capture pod lock
         run: bash tools/prepare-ios.sh
       - name: Configure native UI integration tests
@@ -61,7 +64,8 @@ jobs:
         with:
           name: integration-evidence-${{ github.sha }}
           path: |
-            artifacts/
+            artifacts/integration.xcresult/
+            artifacts/*.log
             dist/gpu-check.preview.txt
           if-no-files-found: warn
           retention-days: 14

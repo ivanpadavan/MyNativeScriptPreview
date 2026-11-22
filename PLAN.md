@@ -12,7 +12,7 @@
 
 ## check
 
-- [ ] Generate and commit npm and CocoaPods lockfiles in CI; require locked installs on subsequent runs.
+- [ ] Commit the CocoaPods lockfile from the first iOS preparation in CI; require unchanged resolution on subsequent runs.
 - [ ] Pass package/source checks, simulator integration tests, and unsigned IPA verification in CI.
 - [ ] Make successful IPA, GPU text package, requested entitlements, capability report, and test evidence available as CI artifacts.
 - [ ] First-stage acceptance: import the GPU package through the real paste UI, run `checkGPU`, return, restart, and repeat offline. API unavailability on the iOS 26+ test runner is a failure, not a substitute for a successful check.
@@ -28,5 +28,6 @@
 
 ## done
 
+- [x] JavaScript and Ruby dependency locks generated in CI: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45076691257 (source commit `ad2e5d9`). No packages were installed locally.
 - [x] Public repository created: https://github.com/ivanpadavan/MyNativeScriptPreview . GitHub CLI authorization was restored after fixing ownership of `/home/codex/.config`.
 - [x] Agreed scope and execution constraints recorded in this file. This is planning evidence only; no build or test success is claimed.

@@ -223,7 +223,7 @@ jobs:
     concurrency:
       group: integration-${{ github.ref }}
       cancel-in-progress: true
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
@@ -242,12 +242,23 @@ jobs:
         with:
           name: gpu-text-package
           path: dist
-      - name: Build standalone UI runner and exercise the prebuilt shell
+      - name: Configure standalone UI runner
         run: |
           sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
           bundle config set --local path vendor/bundle
           bundle exec ruby tools/add-ui-tests.rb
-          bash tools/run-integration.sh
+      - name: Boot simulator and install prebuilt shell
+        timeout-minutes: 4
+        run: bash tools/run-integration.sh boot
+      - name: Build standalone XCTest runner
+        timeout-minutes: 4
+        run: bash tools/run-integration.sh build
+      - name: Run real-clipboard integration tests
+        timeout-minutes: 7
+        run: bash tools/run-integration.sh test
+      - name: Clean up simulator
+        if: always()
+        run: bash tools/run-integration.sh cleanup
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -255,6 +266,8 @@ jobs:
           path: |
             artifacts/integration.xcresult/
             artifacts/*.log
+            artifacts/test-summary.json
+            artifacts/screenshots/
           if-no-files-found: warn
           retention-days: 14
 

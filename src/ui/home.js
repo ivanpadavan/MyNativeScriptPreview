@@ -26,7 +26,9 @@ function createHome() {
   layout.addChild(header);
 
   const editor = new TextView();
-  editor.hint = 'Текст проекта ns-preview/1';
+  // NativeScript implements TextView.hint by putting placeholder text into the
+  // native UITextView. A paste target need not be focused, so keep instructions
+  // outside the editor rather than risking insertion into placeholder content.
   editor.className = 'editor';
   editor.automationText = 'project-text';
   editor.autocorrect = false;

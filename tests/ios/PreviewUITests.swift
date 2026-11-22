@@ -22,11 +22,16 @@ final class PreviewUITests: XCTestCase {
         app.buttons["clear-project-text"].tap()
         // This is the real system pasteboard, written by the separate test runner.
         // No launch-argument importer, fixture URL, or guest bypass is used.
+        let runnerID = Bundle.main.bundleIdentifier!
+        XCUIApplication(bundleIdentifier: runnerID).activate()
         UIPasteboard.general.string = text
+        XCTAssertEqual(UIPasteboard.general.string, text)
+        app.activate()
         let paste = app.descendants(matching: .any).matching(identifier: "paste-project").firstMatch
         XCTAssertTrue(paste.waitForExistence(timeout: 5))
         paste.tap()
         let editor = app.textViews["project-text"]
+        print("Pasted text prefix: \((editor.value as? String)?.prefix(160) ?? "<nil>")")
         let pasted = NSPredicate { _, _ in (editor.value as? String) == text }
         expectation(for: pasted, evaluatedWith: editor)
         waitForExpectations(timeout: 10)

@@ -178,12 +178,15 @@ jobs:
           path: platforms/ios
           key: ios-platform-v1-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
           fail-on-cache-miss: true
-      - name: Build shell and verify unsigned IPA only on a shell-cache miss
+      - name: Prepare native sources only on a shell-cache miss
         if: steps.shell.outputs.cache-hit != 'true'
         run: |
           sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
           bundle config set --local path vendor/bundle
           bash tools/prepare-ios.sh
+      - name: Build shell and verify unsigned IPA only on a shell-cache miss
+        if: steps.shell.outputs.cache-hit != 'true'
+        run: |
           bash tools/build-simulator.sh
           bash tools/build-unsigned.sh
           npm run ci:verify-ipa

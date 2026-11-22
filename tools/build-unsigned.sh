@@ -3,7 +3,7 @@ set -euo pipefail
 if [[ "${CI:-}" != "true" ]]; then echo 'Device builds are CI-only.' >&2; exit 1; fi
 mkdir -p artifacts
 xcodebuild \
-  -workspace "$NS_WORKSPACE" \
+  "$NS_CONTAINER_FLAG" "$NS_CONTAINER_PATH" \
   -scheme "$NS_SCHEME" \
   -configuration Release \
   -sdk iphoneos \
@@ -12,7 +12,9 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
   archive 2>&1 | tee artifacts/device-build.log
 mkdir -p artifacts/package/Payload
-ditto artifacts/Preview.xcarchive/Products/Applications/MyNativeScriptPreview.app \
+apps=(artifacts/Preview.xcarchive/Products/Applications/*.app)
+if [[ ${#apps[@]} -ne 1 || ! -d "${apps[0]}" ]]; then echo 'Expected one archived device application.' >&2; exit 1; fi
+ditto "${apps[0]}" \
   artifacts/package/Payload/MyNativeScriptPreview.app
 cp ci/requested-entitlements.plist artifacts/package/Payload/MyNativeScriptPreview.app/PreviewRequestedEntitlements.plist
 cp ci/runtime-catalog.json artifacts/package/Payload/MyNativeScriptPreview.app/PreviewRuntimeCatalog.json

@@ -23,7 +23,7 @@ native_files = {
     'ci/runtime-catalog.json', 'ci/requested-entitlements.plist', 'ci/toolchain.json',
     'tools/prepare-ios.sh', 'tools/prepare-platform.sh', 'tools/build-simulator.sh',
     'tools/build-unsigned.sh', 'tools/verify-ipa.py', 'tools/capability-report.mjs',
-    'tools/check-no-embedded-example.py',
+    'tools/check-no-embedded-example.py', 'tools/ios-layout.rb',
 }
 
 def native(name):

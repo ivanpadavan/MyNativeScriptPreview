@@ -5,6 +5,7 @@ class ProjectPasteControl extends View {
     super();
     this.textView = textView;
     this.height = 44;
+    this.width = 180;
     this.marginTop = 10;
     this.horizontalAlignment = 'left';
   }

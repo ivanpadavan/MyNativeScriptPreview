@@ -5,4 +5,10 @@ const { createHome } = require('./ui/home');
 // present when the shell is compiled and cannot drive native symbol discovery.
 console.info('BackgroundTasks metadata:', typeof BGTaskScheduler !== 'undefined');
 
-core.Application.run({ create: createHome });
+core.Application.run({
+  create() {
+    const frame = new core.Frame();
+    frame.navigate({ create: createHome });
+    return frame;
+  },
+});

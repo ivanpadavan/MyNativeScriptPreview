@@ -89,11 +89,12 @@ jobs:
         with:
           path: vendor/bundle
           key: gems-macos-arm64-ruby${{ needs.scope.outputs.ruby }}-${{ hashFiles('Gemfile', 'Gemfile.lock') }}
-      - name: Install Ruby dependencies only on a dependency-cache miss
+      - name: Configure Ruby dependency location
         if: matrix.label == 'macos'
-        run: |
-          bundle config set --local path vendor/bundle
-          if [[ '${{ steps.gems.outputs.cache-hit }}' != 'true' ]]; then BUNDLE_FROZEN=true bundle install; fi
+        run: bundle config set --local path vendor/bundle
+      - name: Install Ruby dependencies only on a dependency-cache miss
+        if: matrix.label == 'macos' && steps.gems.outputs.cache-hit != 'true'
+        run: BUNDLE_FROZEN=true bundle install
       - name: Select Xcode
         if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true'
         run: sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer

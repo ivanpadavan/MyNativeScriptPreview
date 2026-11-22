@@ -22,5 +22,6 @@ xcodebuild \
   -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath artifacts/simulator-build \
   -resultBundlePath artifacts/integration.xcresult \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
   test 2>&1 | tee artifacts/integration.log

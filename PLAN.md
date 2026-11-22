@@ -29,6 +29,8 @@
 
 ## done
 
+- [x] Documentation-only routing verified: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45078008779 (`3f85027`); only Linux scope ran, all dependency/native/test jobs skipped, and the relevant native run continued.
+- [x] Source syntax, GPU TypeScript and text-package export passed in CI: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45077531877 (`fad5ad6`). This is not native/UI-test completion.
 - [x] JavaScript and Ruby dependency locks generated in CI: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45076691257 (source commit `ad2e5d9`). No packages were installed locally.
 - [x] Public repository created: https://github.com/ivanpadavan/MyNativeScriptPreview . GitHub CLI authorization was restored after fixing ownership of `/home/codex/.config`.
 - [x] Agreed scope and execution constraints recorded in this file. This is planning evidence only; no build or test success is claimed.

@@ -6,6 +6,7 @@ xcodebuild \
   "$NS_CONTAINER_FLAG" "$NS_CONTAINER_PATH" -scheme "$NS_SCHEME" -configuration Debug \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath artifacts/simulator-build \
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
   build 2>&1 | tee artifacts/simulator-build.log
 apps=(artifacts/simulator-build/Build/Products/Debug-iphonesimulator/*.app)

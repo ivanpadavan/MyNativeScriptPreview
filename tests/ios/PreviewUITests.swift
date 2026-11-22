@@ -12,6 +12,15 @@ final class PreviewUITests: XCTestCase {
         XCTAssertTrue(app.buttons["run-project"].waitForExistence(timeout: 20))
     }
 
+    override func tearDownWithError() throws {
+        if testRun?.hasSucceeded == false {
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "failure-screen"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+        }
+    }
+
     private func fixture() throws -> String {
         let bundle = Bundle(for: PreviewUITests.self)
         let url = try XCTUnwrap(bundle.url(forResource: "gpu-check", withExtension: "preview.txt"))
@@ -52,6 +61,7 @@ final class PreviewUITests: XCTestCase {
         )).firstMatch
         // Missing SDK metadata on our iOS 26+ runner must not pass via fallback.
         XCTAssertTrue(value.exists, "Expected the actual native API's numeric resource mask")
+        print("Native GPU response: \(value.label)")
         XCTAssertFalse(alert.staticTexts["API недоступен в этой версии Preview или iOS"].exists)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Actual BackgroundTasks API result"

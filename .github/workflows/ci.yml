@@ -199,8 +199,18 @@ jobs:
         run: echo 'Native shell cache hit = ${{ steps.shell.outputs.cache-hit }}; key = ${{ needs.scope.outputs.shell_key }}' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: native-shell-build-only
-          path: artifacts/shell/
+          name: native-device-build-only
+          path: |
+            artifacts/shell/MyNativeScriptPreview-unsigned.ipa
+            artifacts/shell/requested-entitlements.plist
+            artifacts/shell/capabilities.json
+            artifacts/shell/locks/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-simulator-build-only
+          path: artifacts/shell/simulator-app.tar.gz
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
@@ -236,7 +246,7 @@ jobs:
           fail-on-cache-miss: true
       - uses: actions/download-artifact@v4
         with:
-          name: native-shell-build-only
+          name: native-simulator-build-only
           path: artifacts/shell
       - uses: actions/download-artifact@v4
         with:
@@ -285,7 +295,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: native-shell-build-only
+          name: native-device-build-only
           path: artifacts/shell
       - uses: actions/download-artifact@v4
         with:

@@ -65,7 +65,9 @@ are not present in the shell app bundle.
   bundle ID and never rebuilds the NativeScript shell.
 - Missing/evicted caches are rebuilt through the dependency/build jobs; no
   broad restore-prefix fallback accepts stale dependency or native outputs.
-- The internal `native-shell-build-only` artifact is **not** verified. Only the
+- Internal `native-device-build-only` and `native-simulator-build-only` artifacts
+  are **not** verified. Integration downloads only the simulator app; publication
+  downloads only the device files. Only the
   downstream `preview-verified-*` artifact is published after integration passes.
 - Native provenance in `capabilities.json` identifies the original build. The
   successful workflow identifies the current example/test revision that used it.

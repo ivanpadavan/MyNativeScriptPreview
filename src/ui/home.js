@@ -18,7 +18,7 @@ function createHome() {
   const page = new Page();
   page.actionBar.title = 'NativeScript Preview';
   const layout = new GridLayout();
-  layout.rows = 'auto, *, auto';
+  layout.rows = 'auto, auto, *, auto';
   layout.padding = 20;
   const header = new StackLayout();
   header.addChild(label('Вставьте проект', 'title'));
@@ -32,19 +32,35 @@ function createHome() {
   editor.className = 'editor';
   editor.automationText = 'project-text';
   editor.autocorrect = false;
-  GridLayout.setRow(editor, 1);
+  GridLayout.setRow(editor, 2);
   layout.addChild(editor);
 
+  // Keep the primary actions above the editor: focusing UITextView must never
+  // put Run underneath the keyboard. The navigation bar also offers an explicit
+  // dismissal, including when the pasted package is invalid.
+  const dismiss = new ActionItem();
+  dismiss.text = 'Готово';
+  dismiss.automationText = 'dismiss-keyboard';
+  dismiss.ios.position = 'right';
+  dismiss.on('tap', () => editor.dismissSoftInput());
+  page.actionBar.actionItems.addItem(dismiss);
+
+  const actions = new GridLayout();
+  actions.columns = 'auto, *';
+  actions.marginBottom = 12;
+  GridLayout.setRow(actions, 1);
+  layout.addChild(actions);
   const footer = new StackLayout();
-  GridLayout.setRow(footer, 2);
+  GridLayout.setRow(footer, 3);
   const paste = new ProjectPasteControl(editor);
   paste.on('pasteError', (args) => { errorView.text = args.message; });
-  footer.addChild(paste);
+  actions.addChild(paste);
   const run = new Button();
   run.text = 'Запустить';
   run.automationText = 'run-project';
   run.className = 'primary';
-  footer.addChild(run);
+  GridLayout.setColumn(run, 1);
+  actions.addChild(run);
   const clear = new Button();
   clear.text = 'Очистить текст';
   clear.automationText = 'clear-project-text';
@@ -70,6 +86,7 @@ function createHome() {
 
   async function launch(raw) {
     if (busy) return;
+    editor.dismissSoftInput();
     busy = true;
     run.isEnabled = false;
     reopen.isEnabled = false;
@@ -97,7 +114,6 @@ function createHome() {
         guest.dispose();
         storage.removeStage(directory).catch((error) => console.error(error));
       });
-      editor.dismissSoftInput();
       page.frame.navigate({ create: () => guest.page });
     } catch (error) {
       if (guest) guest.dispose();

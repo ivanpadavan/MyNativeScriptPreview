@@ -27,7 +27,7 @@ final class PreviewUITests: XCTestCase {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
-    private func paste(_ text: String) {
+    private func paste(_ text: String, withKeyboard: Bool = false) {
         app.buttons["clear-project-text"].tap()
         // This is the real system pasteboard, written by the separate test runner.
         // No launch-argument importer, fixture URL, or guest bypass is used.
@@ -36,8 +36,15 @@ final class PreviewUITests: XCTestCase {
         UIPasteboard.general.string = text
         XCTAssertEqual(UIPasteboard.general.string, text)
         app.activate()
+        if withKeyboard {
+            app.textViews["project-text"].tap()
+            XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        }
         let paste = app.descendants(matching: .any).matching(identifier: "paste-project").firstMatch
         XCTAssertTrue(paste.waitForExistence(timeout: 5))
+        if withKeyboard {
+            XCTAssertLessThanOrEqual(paste.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        }
         paste.tap()
         let editor = app.textViews["project-text"]
         print("Pasted text prefix: \((editor.value as? String)?.prefix(160) ?? "<nil>")")
@@ -93,6 +100,31 @@ final class PreviewUITests: XCTestCase {
         try runFixture()
         checkGPU()
         returnToShell()
+    }
+
+    func testPasteAndRunRemainAboveKeyboard() throws {
+        paste(try fixture(), withKeyboard: true)
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        let run = app.buttons["run-project"]
+        XCTAssertTrue(run.isHittable)
+        XCTAssertLessThanOrEqual(run.frame.maxY, keyboard.frame.minY,
+                                 "Run must be above the keyboard without scrolling")
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Paste and Run above open keyboard"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        run.tap()
+        XCTAssertTrue(app.buttons["check-gpu"].waitForExistence(timeout: 10))
+        checkGPU()
+        returnToShell()
+
+        app.textViews["project-text"].tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        app.buttons["dismiss-keyboard"].tap()
+        let hidden = NSPredicate { _, _ in !keyboard.exists }
+        expectation(for: hidden, evaluatedWith: app)
+        waitForExpectations(timeout: 5)
     }
 
     func testSavedProjectAfterProcessRestartWithoutDevServer() throws {

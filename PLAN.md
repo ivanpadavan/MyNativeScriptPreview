@@ -25,6 +25,7 @@
 
 ## in-progress
 
+- [ ] Fix keyboard covering import actions: place Paste/Run above the editor, provide explicit keyboard dismissal, and verify real clipboard paste and launch with the keyboard open in CI before publishing a replacement IPA.
 - [ ] Implement the shared package contract, CI exporter, offline loader, iOS paste shell, GPU example, unsigned IPA pipeline, and XCUITest integration suite.
 
 ## done

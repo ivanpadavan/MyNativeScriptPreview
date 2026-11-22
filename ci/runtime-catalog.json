@@ -1,0 +1,8 @@
+{
+  "profile": "ios-core-v1",
+  "format": "ns-preview/1",
+  "packages": ["@nativescript/core"],
+  "frameworks": ["BackgroundTasks"],
+  "minimumIOS": "16.0",
+  "gpuProbeRequiresIOS": "26.0"
+}

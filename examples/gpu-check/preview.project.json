@@ -1,0 +1,5 @@
+{
+  "name": "GPU Check",
+  "entry": "src/main.ts",
+  "assets": []
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleDevelopmentRegion</key><string>ru</string>
+  <key>CFBundleDisplayName</key><string>NativeScript Preview</string>
+  <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+  <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>LSRequiresIPhoneOS</key><true/>
+  <key>UILaunchStoryboardName</key><string>LaunchScreen</string>
+  <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
+  <key>UIFileSharingEnabled</key><true/>
+  <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+  <key>UIBackgroundModes</key><array>
+    <string>audio</string><string>location</string><string>fetch</string>
+    <string>processing</string><string>bluetooth-central</string><string>bluetooth-peripheral</string>
+  </array>
+  <key>BGTaskSchedulerPermittedIdentifiers</key><array>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER).preview.processing</string>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER).preview.refresh</string>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER).preview.continued.*</string>
+  </array>
+  <key>NSCameraUsageDescription</key><string>Доступ к камере для запущенного вами проекта.</string>
+  <key>NSMicrophoneUsageDescription</key><string>Запись звука для запущенного вами проекта.</string>
+  <key>NSPhotoLibraryUsageDescription</key><string>Выбор фотографий для запущенного вами проекта.</string>
+  <key>NSPhotoLibraryAddUsageDescription</key><string>Сохранение фотографий из запущенного вами проекта.</string>
+  <key>NSLocationWhenInUseUsageDescription</key><string>Геолокация для запущенного вами проекта.</string>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>Обновление геолокации в фоне для запущенного вами проекта.</string>
+  <key>NSBluetoothAlwaysUsageDescription</key><string>Подключение Bluetooth-устройств для запущенного вами проекта.</string>
+  <key>NSMotionUsageDescription</key><string>Датчики движения для запущенного вами проекта.</string>
+  <key>NSFaceIDUsageDescription</key><string>Подтверждение действий в запущенном вами проекте.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>Распознавание речи для запущенного вами проекта.</string>
+  <key>NSContactsUsageDescription</key><string>Контакты для запущенного вами проекта.</string>
+  <key>NSCalendarsUsageDescription</key><string>Календарь для запущенного вами проекта.</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Календарь для запущенного вами проекта.</string>
+  <key>NSRemindersUsageDescription</key><string>Напоминания для запущенного вами проекта.</string>
+  <key>NSRemindersFullAccessUsageDescription</key><string>Напоминания для запущенного вами проекта.</string>
+  <key>NSAppleMusicUsageDescription</key><string>Медиатека для запущенного вами проекта.</string>
+  <key>NSLocalNetworkUsageDescription</key><string>Подключение к локальным устройствам для запущенного вами проекта.</string>
+</dict></plist>

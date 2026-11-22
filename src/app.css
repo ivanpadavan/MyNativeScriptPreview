@@ -1,0 +1,9 @@
+Page { background-color: #f4f5f8; color: #182234; }
+ActionBar { background-color: #ffffff; color: #182234; }
+.title { font-size: 25; font-weight: bold; margin-bottom: 10; }
+.body { font-size: 16; margin-bottom: 12; }
+.editor { font-family: monospace; font-size: 12; background-color: #ffffff; border-radius: 10; padding: 12; min-height: 120; }
+.primary { background-color: #245dde; color: #ffffff; border-radius: 10; padding: 12; margin-top: 12; }
+.secondary { color: #245dde; padding: 10; margin-top: 6; }
+.error { color: #a31e32; font-size: 14; margin-top: 10; }
+.muted { color: #526077; font-size: 13; margin-top: 10; }

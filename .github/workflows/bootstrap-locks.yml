@@ -1,0 +1,42 @@
+name: Bootstrap dependency locks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - Gemfile
+      - .node-version
+      - .github/workflows/bootstrap-locks.yml
+
+permissions:
+  contents: read
+
+jobs:
+  locks:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.6'
+      - name: Resolve locks in CI only
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          bundle lock
+          mkdir -p artifacts/dependency-locks
+          cp package-lock.json Gemfile.lock artifacts/dependency-locks/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dependency-locks
+          path: artifacts/dependency-locks/
+          if-no-files-found: error
+      - name: Next step
+        run: |
+          echo 'Commit package-lock.json and Gemfile.lock from this artifact, then rerun Preview CI.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Nothing was installed or checked on a local machine.' >> "$GITHUB_STEP_SUMMARY"

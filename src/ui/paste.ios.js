@@ -11,20 +11,23 @@ class ProjectPasteControl extends View {
   }
 
   createNativeView() {
-    const control = UIPasteControl.alloc().init();
-    control.accessibilityIdentifier = 'paste-project';
-    control.accessibilityLabel = 'Вставить проект';
-    control.isAccessibilityElement = true;
-    return control;
+    return NSPreviewPasteView.alloc().initWithFrame(CGRectZero);
   }
 
-  onLoaded() {
-    super.onLoaded();
-    this.nativeViewProtected.target = this.textView.ios;
+  initNativeView() {
+    super.initNativeView();
+    const editor = this.textView;
+    const owner = new WeakRef(this);
+    this.nativeViewProtected.onPaste = (text) => { editor.text = String(text); };
+    this.nativeViewProtected.onFailure = (message) => {
+      const view = owner.deref();
+      if (view) view.notify({ eventName: 'pasteError', object: view, message: String(message) });
+    };
   }
 
   disposeNativeView() {
-    this.nativeViewProtected.target = null;
+    this.nativeViewProtected.onPaste = null;
+    this.nativeViewProtected.onFailure = null;
     super.disposeNativeView();
   }
 }

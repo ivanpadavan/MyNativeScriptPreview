@@ -253,8 +253,11 @@ jobs:
       - name: Build standalone XCTest runner
         timeout-minutes: 4
         run: bash tools/run-integration.sh build
-      - name: Run real-clipboard integration tests
-        timeout-minutes: 7
+      - name: Run clipboard and GPU smoke test first
+        timeout-minutes: 4
+        run: bash tools/run-integration.sh smoke
+      - name: Run remaining integration scenarios
+        timeout-minutes: 5
         run: bash tools/run-integration.sh test
       - name: Clean up simulator
         if: always()
@@ -265,8 +268,9 @@ jobs:
           name: integration-evidence-${{ github.sha }}
           path: |
             artifacts/integration.xcresult/
+            artifacts/smoke.xcresult/
             artifacts/*.log
-            artifacts/test-summary.json
+            artifacts/*-summary.json
             artifacts/screenshots/
           if-no-files-found: warn
           retention-days: 14

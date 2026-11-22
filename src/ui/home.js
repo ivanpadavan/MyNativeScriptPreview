@@ -37,7 +37,9 @@ function createHome() {
 
   const footer = new StackLayout();
   GridLayout.setRow(footer, 2);
-  footer.addChild(new ProjectPasteControl(editor));
+  const paste = new ProjectPasteControl(editor);
+  paste.on('pasteError', (args) => { errorView.text = args.message; });
+  footer.addChild(paste);
   const run = new Button();
   run.text = 'Запустить';
   run.automationText = 'run-project';

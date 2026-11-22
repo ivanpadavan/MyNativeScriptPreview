@@ -1,0 +1,4 @@
+module PreviewClipboard {
+    header "NSPreviewPasteView.h"
+    export *
+}

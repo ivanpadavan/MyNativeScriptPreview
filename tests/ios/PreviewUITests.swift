@@ -90,7 +90,9 @@ final class PreviewUITests: XCTestCase {
         checkGPU()
         returnToShell()
         app.terminate()
+        XCUIApplication(bundleIdentifier: Bundle.main.bundleIdentifier!).activate()
         UIPasteboard.general.string = ""
+        XCTAssertEqual(UIPasteboard.general.string ?? "", "")
         app.launch()
         let saved = app.buttons["open-saved-project"]
         XCTAssertTrue(saved.waitForExistence(timeout: 10))

@@ -18,10 +18,11 @@ PY
 fi
 
 if [[ "$phase" == boot ]]; then
-  device_id="$(xcrun simctl create PreviewIntegration "$PREVIEW_SIMULATOR_DEVICE" "$PREVIEW_SIMULATOR_RUNTIME")"
+  device_id="$(python3 tools/select-simulator.py)"
   echo "PREVIEW_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
   export PREVIEW_DEVICE_ID="$device_id"
-  xcrun simctl boot "$device_id"
+  state="$(xcrun simctl list devices --json | python3 -c 'import json,os,sys; print(next(d["state"] for items in json.load(sys.stdin)["devices"].values() for d in items if d["udid"]==os.environ["PREVIEW_DEVICE_ID"]))')"
+  if [[ "$state" != Booted ]]; then xcrun simctl boot "$device_id"; fi
   python3 - <<'PY' 2>&1 | tee artifacts/simulator-boot.log
 import os, subprocess
 subprocess.run(['xcrun', 'simctl', 'bootstatus', os.environ['PREVIEW_DEVICE_ID'], '-b'], timeout=180, check=True)
@@ -44,19 +45,27 @@ common=(
 
 if [[ "$phase" == build ]]; then
   xcodebuild "${common[@]}" build-for-testing 2>&1 | tee artifacts/ui-build.log
-elif [[ "$phase" == test ]]; then
+elif [[ "$phase" == test || "$phase" == smoke ]]; then
+  if [[ "$phase" == smoke ]]; then
+    selection=(-only-testing:PreviewUITests/PreviewUITests/testRealPasteAndNativeGPUResult)
+    result=smoke
+  else
+    selection=(-skip-testing:PreviewUITests/PreviewUITests/testRealPasteAndNativeGPUResult)
+    result=integration
+  fi
   set +e
   xcodebuild "${common[@]}" \
-    -resultBundlePath artifacts/integration.xcresult \
+    -resultBundlePath "artifacts/$result.xcresult" \
+    "${selection[@]}" \
     -parallel-testing-enabled NO \
     -test-timeouts-enabled YES \
     -default-test-execution-time-allowance 120 \
     -maximum-test-execution-time-allowance 150 \
-    test-without-building 2>&1 | tee artifacts/integration.log
+    test-without-building 2>&1 | tee "artifacts/$result.log"
   test_status=${PIPESTATUS[0]}
-  xcrun xcresulttool get test-results summary --path artifacts/integration.xcresult > artifacts/test-summary.json
-  if [[ -d artifacts/integration.xcresult ]]; then
-    xcrun xcresulttool export attachments --path artifacts/integration.xcresult --output-path artifacts/screenshots
+  xcrun xcresulttool get test-results summary --path "artifacts/$result.xcresult" > "artifacts/$result-summary.json"
+  if [[ -d "artifacts/$result.xcresult" ]]; then
+    xcrun xcresulttool export attachments --path "artifacts/$result.xcresult" --output-path "artifacts/screenshots/$result"
   fi
   exit "$test_status"
 else

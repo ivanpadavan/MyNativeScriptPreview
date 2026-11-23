@@ -9,7 +9,8 @@ elif [[ -f artifacts/pod-lock/Podfile.lock ]]; then
   cp artifacts/pod-lock/Podfile.lock platforms/ios/Podfile.lock
 fi
 export PATH="$PWD/node_modules/.bin:$PATH"
-bundle exec node tools/prepare-native-dependencies.cjs --bundle 2>&1 | tee artifacts/prepare-ios.log
+PREVIEW_FROZEN_NATIVE_DEPS=1 NODE_OPTIONS="${NODE_OPTIONS:-} --require=$PWD/tools/frozen-cli-dependencies.cjs" \
+  bundle exec ns prepare ios --env.production 2>&1 | tee artifacts/prepare-ios.log
 if [[ -f ci/Podfile.lock ]]; then
   cmp ci/Podfile.lock platforms/ios/Podfile.lock
 elif [[ -f artifacts/pod-lock/Podfile.lock ]]; then

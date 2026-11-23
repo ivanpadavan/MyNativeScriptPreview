@@ -3,16 +3,20 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 
 if os.environ.get('CI') != 'true':
     raise SystemExit('CI scope detection is CI-only.')
 event = json.loads(pathlib.Path(os.environ['GITHUB_EVENT_PATH']).read_text())
 event_name = os.environ['GITHUB_EVENT_NAME']
-head = os.environ['GITHUB_SHA']
+revision = sys.argv[2] if len(sys.argv) == 3 and sys.argv[1] == '--native-key-for-ref' else None
+head = revision or os.environ['GITHUB_SHA']
 base = event.get('pull_request', {}).get('base', {}).get('sha') or event.get('before')
-tracked = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+tracked = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', '-z', revision] if revision else ['git', 'ls-files', '-z']).decode().split('\0')
 tracked = [name for name in tracked if name]
-if base and set(base) != {'0'}:
+if revision:
+    changed = tracked
+elif base and set(base) != {'0'}:
     changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', base, head]).decode().split('\0')
 else:
     changed = tracked
@@ -38,7 +42,11 @@ def fingerprint(names):
     digest = hashlib.sha256()
     for name in sorted(names):
         path = pathlib.Path(name)
-        if path.is_file():
+        if revision:
+            content = subprocess.run(['git', 'show', f'{revision}:{name}'], capture_output=True)
+            if content.returncode == 0:
+                digest.update(name.encode() + b'\0' + content.stdout + b'\0')
+        elif path.is_file():
             digest.update(name.encode() + b'\0' + path.read_bytes() + b'\0')
     return digest.hexdigest()
 
@@ -48,7 +56,7 @@ native_dependencies = {'package.json', 'package-lock.json', 'Gemfile', 'Gemfile.
 platform_hash = fingerprint([name for name in tracked if name in native_dependencies
                              or name == 'App_Resources/iOS/Podfile' or name.endswith('.podspec')])
 shell_hash = fingerprint([name for name in tracked if native(name)])
-toolchain = json.loads(pathlib.Path('ci/toolchain.json').read_text())
+toolchain = json.loads(subprocess.check_output(['git', 'show', f'{revision}:ci/toolchain.json']) if revision else pathlib.Path('ci/toolchain.json').read_text())
 values = {
     'work': str(event_name == 'workflow_dispatch' or any(relevant(name) for name in changed)).lower(),
     'node_hash': node_hash,
@@ -59,6 +67,9 @@ values = {
     'simulator_runtime': toolchain['simulatorRuntime'],
     'simulator_device': toolchain['simulatorDeviceType'],
 }
+if revision:
+    print(values['shell_key'])
+    raise SystemExit(0)
 with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
     for key, value in values.items():
         output.write(f'{key}={value}\n')

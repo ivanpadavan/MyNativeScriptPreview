@@ -17,7 +17,7 @@
 
 ## in-progress
 
-No implementation work pending for this milestone. Physical-device acceptance above remains separate.
+- [ ] ORBIT 3D: create a standalone native WebGL demo using the installed Canvas plugin; export through the common Node tool and provide a public text download. New iPhone rendering/gesture acceptance is separate from the existing launcher integration suite.
 
 ## done
 

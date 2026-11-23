@@ -1,0 +1,1 @@
+{"name":"orbit-3d","private":true,"scripts":{"build":"node ../../packager/cli.mjs build ."}}

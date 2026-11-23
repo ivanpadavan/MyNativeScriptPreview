@@ -181,7 +181,10 @@ final class PreviewUITests: XCTestCase {
         exports.createPage=function(ctx){
           for(const name of ctx.packages){const module=require(name);if(!module)throw new Error(name);}
           const page=new Page();page.actionBar.title='Plugin Catalog';const box=new StackLayout();
-          const result=new Label();result.text='Plugins: '+ctx.packages.length;result.automationText='plugin-catalog-result';box.addChild(result);
+          const result=new Label();result.text='Проверяем SQLite…';result.automationText='plugin-catalog-result';box.addChild(result);
+          (async()=>{const sql=require('@nativescript-community/sqlite-core');const db=sql.openOrCreate(ctx.dataPath+'/probe.sqlite');
+            try{await db.ready;const row=await db.get('SELECT 42 AS answer');result.text='Plugins: '+ctx.packages.length+' · SQLite: '+row.answer;}
+            finally{await db.close();}})().catch(e=>{result.text=String(e);});
           const close=new Button();close.text='Закрыть';close.automationText='close-probe';close.on('tap',()=>ctx.close());box.addChild(close);
           page.content=box;return page;
         };
@@ -189,7 +192,10 @@ final class PreviewUITests: XCTestCase {
         importPackage(try packet(name: "Plugin Probe", id: "test.plugins", source: source))
         open("Plugin Probe")
         XCTAssertTrue(app.staticTexts["plugin-catalog-result"].waitForExistence(timeout: 15))
-        XCTAssertEqual(app.staticTexts["plugin-catalog-result"].label, "Plugins: 25")
+        let result = app.staticTexts["plugin-catalog-result"]
+        let loaded = NSPredicate { _, _ in result.label == "Plugins: 25 · SQLite: 42" }
+        expectation(for: loaded, evaluatedWith: result)
+        waitForExpectations(timeout: 15)
         app.buttons["close-probe"].tap()
         XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 5))
     }
@@ -248,5 +254,31 @@ final class PreviewUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["open-app-Disposable"].exists)
+    }
+
+    func testGuestNavigationSupportsNativeEdgeBack() throws {
+        let source = """
+        const {Page,Button,Label,NavigationButton}=require('@nativescript/core');
+        exports.createPage=function(){
+          const root=new Page();root.actionBar.title='Guest Root';
+          const open=new Button();open.text='Подробнее';open.automationText='guest-open-detail';
+          open.on('tap',()=>{const detail=new Page();detail.actionBar.title='Guest Detail';
+            const back=new NavigationButton();back.text='';detail.actionBar.navigationButton=back;
+            const value=new Label();value.text='Detail';value.automationText='guest-detail';detail.content=value;
+            root.frame.navigate({create:()=>detail});});
+          root.content=open;return root;
+        };
+        """
+        importPackage(try packet(name: "Navigation Probe", id: "test.navigation", source: source))
+        open("Navigation Probe")
+        XCTAssertTrue(app.buttons["guest-open-detail"].waitForExistence(timeout: 10))
+        app.buttons["guest-open-detail"].tap()
+        XCTAssertTrue(app.staticTexts["guest-detail"].waitForExistence(timeout: 5))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.005, dy: 0.45)).press(
+            forDuration: 0.1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.45)))
+        XCTAssertTrue(app.buttons["guest-open-detail"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Оболочка"].exists)
+        returnToLibrary()
     }
 }

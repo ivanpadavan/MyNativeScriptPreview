@@ -61,7 +61,8 @@ function serial(operation) {
 }
 
 function listApps() {
-  return serial(async () => (await loadIndex()).sort((a, b) => (b.lastOpenedAt || b.updatedAt) - (a.lastOpenedAt || a.updatedAt)));
+  return serial(async () => (await loadIndex()).sort((a, b) =>
+    Math.max(b.lastOpenedAt || 0, b.updatedAt || 0) - Math.max(a.lastOpenedAt || 0, a.updatedAt || 0)));
 }
 
 function readApp(id) {

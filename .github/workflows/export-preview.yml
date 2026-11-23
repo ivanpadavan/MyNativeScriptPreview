@@ -92,7 +92,9 @@ jobs:
       - name: Build the same text package as the local CLI
         env:
           PREVIEW_PROJECT: ${{ needs.request.outputs.project }}
-        run: node packager/cli.mjs build "$PREVIEW_PROJECT" --out dist/app.preview.txt
+        run: |
+          test ! -d node_modules/@nativescript/core
+          node packager/cli.mjs build "$PREVIEW_PROJECT" --out dist/app.preview.txt
       - uses: actions/upload-artifact@v4
         with:
           name: preview-project-text

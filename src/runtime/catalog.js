@@ -22,7 +22,10 @@ const factories = Object.freeze({
   '@nativescript-community/ui-collectionview': () => require('@nativescript-community/ui-collectionview'),
   '@nativescript-community/ui-image': () => require('@nativescript-community/ui-image'),
   '@nativescript-community/gesturehandler': () => require('@nativescript-community/gesturehandler'),
-  '@nativescript-community/sqlite': () => require('@nativescript-community/sqlite'),
+  '@nativescript-community/sqlite-core': () => {
+    require('@nativescript-community/sqlite-default-engine');
+    return require('@nativescript-community/sqlite-core');
+  },
   '@nativescript-community/https': () => require('@nativescript-community/https'),
   '@nativescript-community/ui-webview': () => require('@nativescript-community/ui-webview'),
   '@nativescript-community/ui-lottie': () => require('@nativescript-community/ui-lottie'),

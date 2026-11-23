@@ -49,5 +49,8 @@ dependency installation, and avoidable native compilation as defects.
   applies to ad-hoc JSON demos, not shell builds or integration checks.
 - Use one package/import flow for every project size. Do not introduce a special
   two-file XML/JS format, a dev-server dependency, or a QR-based import flow.
+- Every example must build through the reusable Node package in `packager/`.
+  CI is one caller of that tool, not a prerequisite for project builds. Keep
+  QUICKSTART.md short enough to build Hello World without platform knowledge.
 - Do not claim that simulator checks prove physical background GPU execution,
   effective entitlements, or signing compatibility with a free Apple ID.

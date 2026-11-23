@@ -10,7 +10,7 @@
     "@nativescript/directions", "@nativescript/appavailability", "@nativescript/email",
     "@nativescript/datetimepicker", "@nativescript/background-http",
     "@nativescript-community/ui-collectionview", "@nativescript-community/ui-image",
-    "@nativescript-community/gesturehandler", "@nativescript-community/sqlite",
+    "@nativescript-community/gesturehandler", "@nativescript-community/sqlite-core",
     "@nativescript-community/https", "@nativescript-community/ui-webview",
     "@nativescript-community/ui-lottie"
   ],

@@ -109,7 +109,7 @@ jobs:
         run: bash tools/prepare-platform.sh
 
   checks:
-    name: Sources and GPU text package
+    name: Sources and example text packages
     needs: [scope, dependencies]
     if: needs.scope.outputs.work == 'true'
     runs-on: ubuntu-24.04
@@ -286,7 +286,7 @@ jobs:
           retention-days: 14
 
   publish:
-    name: Publish verified first-case artifacts
+    name: Publish verified launcher artifacts
     needs: [scope, checks, native, integration]
     if: needs.scope.outputs.work == 'true'
     runs-on: ubuntu-24.04

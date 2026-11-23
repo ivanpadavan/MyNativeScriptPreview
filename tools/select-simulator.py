@@ -8,8 +8,19 @@ if os.environ.get('CI') != 'true':
 
 runtime = os.environ['PREVIEW_SIMULATOR_RUNTIME']
 device_type = os.environ['PREVIEW_SIMULATOR_DEVICE']
-devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '--json'], timeout=60))
-types = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devicetypes', '--json'], timeout=30))
+def simulator_json(arguments):
+    # CoreSimulator's first request starts its service on a fresh hosted runner.
+    # A timed-out client can leave that service warming up; retry the read once.
+    for attempt in range(2):
+        try:
+            return json.loads(subprocess.check_output(['xcrun', 'simctl', *arguments, '--json'], timeout=90))
+        except subprocess.TimeoutExpired:
+            if attempt:
+                raise
+            print('CoreSimulator is still starting; retrying device discovery.', file=sys.stderr)
+
+devices = simulator_json(['list', 'devices', 'available'])
+types = simulator_json(['list', 'devicetypes'])
 name = next(item['name'] for item in types['devicetypes'] if item['identifier'] == device_type)
 candidates = [item for item in devices['devices'].get(runtime, []) if item.get('isAvailable')
               and (item.get('deviceTypeIdentifier') == device_type or item['name'] == name)]

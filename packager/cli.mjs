@@ -22,7 +22,7 @@ export async function buildProject(directory, options = {}) {
     format: 'cjs', platform: 'neutral', target: 'es2022',
     external: catalog.packages, sourcemap: options.sourcemap ? 'inline' : false,
     sourcesContent: Boolean(options.sourcemap), minify: !options.sourcemap,
-    legalComments: 'none', metafile: true, logLevel: 'silent',
+    legalComments: 'none', metafile: true, logLevel: 'silent', charset: 'utf8',
     define: { 'process.env.NODE_ENV': '"production"' },
     loader: { '.xml': 'text', '.css': 'text', '.svg': 'text' },
   });
@@ -36,7 +36,8 @@ export async function buildProject(directory, options = {}) {
       imports.add(dependency.path);
     }
   }
-  const files = { 'entry.cjs': { encoding: 'utf8', data: output.outputFiles[0].text } };
+  const files = Object.create(null);
+  files['entry.cjs'] = { encoding: 'utf8', data: output.outputFiles[0].text };
   const assets = new Set(config.assets || []);
   if (config.icon) assets.add(config.icon);
   for (const asset of assets) {

@@ -1,19 +1,6 @@
 name: Preview text syntax
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'previews/**'
-      - 'shared/package.cjs'
-      - '.node-version'
-      - '.github/workflows/preview-text.yml'
-  pull_request:
-    paths:
-      - 'previews/**'
-      - 'shared/package.cjs'
-      - '.node-version'
-      - '.github/workflows/preview-text.yml'
   workflow_dispatch:
 
 permissions:

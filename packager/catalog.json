@@ -1,0 +1,20 @@
+{
+  "profile": "ios-launcher-v1",
+  "format": "ns-preview/1",
+  "packages": [
+    "@nativescript/core",
+    "@nativescript/canvas", "@nativescript/canvas-svg", "@nativescript/canvas-media",
+    "@nativescript/geolocation", "@nativescript/camera", "@nativescript/imagepicker",
+    "@nativescript/haptics", "@nativescript/local-notifications", "@nativescript/secure-storage",
+    "@nativescript/social-share", "@nativescript/contacts", "@nativescript/brightness",
+    "@nativescript/directions", "@nativescript/appavailability", "@nativescript/email",
+    "@nativescript/datetimepicker", "@nativescript/background-http",
+    "@nativescript-community/ui-collectionview", "@nativescript-community/ui-image",
+    "@nativescript-community/gesturehandler", "@nativescript-community/sqlite",
+    "@nativescript-community/https", "@nativescript-community/ui-webview",
+    "@nativescript-community/ui-lottie"
+  ],
+  "frameworks": ["BackgroundTasks"],
+  "minimumIOS": "16.0",
+  "gpuProbeRequiresIOS": "26.0"
+}

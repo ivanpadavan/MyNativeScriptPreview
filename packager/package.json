@@ -1,0 +1,11 @@
+{
+  "name": "@nspreview/pack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "ns-preview": "cli.mjs" },
+  "exports": { ".": "./cli.mjs", "./protocol": "./protocol.cjs", "./catalog": "./catalog.json" },
+  "files": ["cli.mjs", "protocol.cjs", "catalog.json", "README.md"],
+  "engines": { "node": ">=22" },
+  "dependencies": { "esbuild": "0.28.2" }
+}

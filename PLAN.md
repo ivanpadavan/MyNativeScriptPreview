@@ -6,14 +6,13 @@
 - One versioned package format for every project; no special XML/JS shortcut.
 - No local dependency installation, builds, generators, linters, or tests. All verification runs in GitHub Actions.
 - CI produces an unsigned **device** IPA and separately tests a **simulator** app.
-- First completed example: the supplied `checkGPU` function. Stop after its CI and artifacts are successful.
+- The initial GPU-only boundary was extended by the user: launcher library, compiled plugins, unified project export, and examples using that flow. ZIP import remains out of scope.
 - Free Apple ID signing happens outside CI. Requested entitlements are not effective permissions until a compatible profile signs the app.
 - `done` requires evidence. CI-dependent tasks include the successful run URL and commit.
 
 ## check
 
 - [ ] Verify rational CI routing: documentation skips builds, dependency-cache hits skip installs, and example/test-only changes reuse the compiled native shell.
-- [ ] Stop implementation after the GPU milestone; do not start the following examples automatically.
 - [ ] `examples/tap-counter`: counter and reset, same exporter and import flow; integration tests exercise repeated taps and restart.
 - [ ] `examples/background-location`: start/stop tracking, permission handling, persisted events, background updates. Simulator integration checks plus explicit physical-device CI evidence for actual background behavior.
 - [ ] `examples/canvas`: complex animated Canvas scene with assets and interaction, render/interaction integration checks and cleanup on exit.
@@ -21,6 +20,10 @@
 
 ## in-progress
 
+- [ ] Launcher: persistent multi-app library, import/update/delete/open, legacy last-project migration, per-app data directories, and guest-owned navigation without injected shell buttons.
+- [ ] Embed the selected native plugin catalog and expose every declared module through the offline loader and exporter; verify module imports in simulator integration before claiming availability.
+- [ ] One project build target: CI bundles JS dependencies and assets into `ns-preview/1`; the README explains supported inputs and the copy/paste flow briefly. Standalone export must not allocate macOS runners or rebuild the IPA.
+- [ ] Examples use the same build/export/launcher path: GPU, tap counter, background location, and Canvas. Native/physical limitations require explicit evidence.
 - [ ] Fix the manually authored Netflix paste package's escaped line breaks; validate decoded JavaScript in a standalone Linux CI job without installing dependencies or rebuilding the shell. This is a syntax check, not native UI acceptance.
 - [ ] Fix keyboard covering import actions: place Paste/Run above the editor, provide explicit keyboard dismissal, and verify real clipboard paste and launch with the keyboard open in CI before publishing a replacement IPA.
 

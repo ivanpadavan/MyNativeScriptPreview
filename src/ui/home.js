@@ -1,10 +1,8 @@
-const {
-  ActionItem, Button, GridLayout, Label, Page, StackLayout, TextView,
-} = require('@nativescript/core');
-const { parsePackage } = require('../../shared/package.cjs');
-const { createGuest } = require('../runtime/loader');
+const { ActionItem, Button, GridLayout, Image, ImageSource, Label, Page, ScrollView, StackLayout, confirm } = require('@nativescript/core');
 const storage = require('../runtime/storage');
-const { ProjectPasteControl } = require('./paste.ios');
+const { packages } = require('../runtime/catalog');
+const { openSession } = require('../runtime/session');
+const { createImport } = require('./import');
 
 function label(text, className) {
   const view = new Label();
@@ -16,127 +14,160 @@ function label(text, className) {
 
 function createHome() {
   const page = new Page();
-  page.actionBar.title = 'NativeScript Preview';
-  const layout = new GridLayout();
-  layout.rows = 'auto, auto, *, auto';
-  layout.padding = 20;
-  const header = new StackLayout();
-  header.addChild(label('Вставьте проект', 'title'));
-  header.addChild(label('Скопируйте весь файл .preview.txt из CI, вставьте его и нажмите «Запустить».', 'body'));
-  layout.addChild(header);
+  page.className = 'launcher';
+  page.statusBarStyle = 'light';
+  page.actionBar.title = 'Preview';
+  page.actionBar.backgroundColor = '#0d1017';
+  page.actionBar.color = '#ffffff';
+  page.actionBar.flat = true;
+  const addAction = new ActionItem();
+  const add = new Button();
+  add.text = '+';
+  add.automationText = 'add-project';
+  add.className = 'launcher-add';
+  add.width = 44; add.height = 44;
+  addAction.actionView = add;
+  addAction.ios.position = 'right';
+  page.actionBar.actionItems.addItem(addAction);
 
-  const editor = new TextView();
-  // NativeScript implements TextView.hint by putting placeholder text into the
-  // native UITextView. A paste target need not be focused, so keep instructions
-  // outside the editor rather than risking insertion into placeholder content.
-  editor.className = 'editor';
-  editor.automationText = 'project-text';
-  editor.autocorrect = false;
-  GridLayout.setRow(editor, 2);
-  layout.addChild(editor);
+  const scroll = new ScrollView();
+  scroll.scrollBarIndicatorVisible = false;
+  const content = new StackLayout();
+  content.padding = '14 20 28';
+  scroll.content = content;
+  page.content = scroll;
+  let opening = false;
 
-  // Keep the primary actions above the editor: focusing UITextView must never
-  // put Run underneath the keyboard. The navigation bar also offers an explicit
-  // dismissal, including when the pasted package is invalid.
-  const dismiss = new ActionItem();
-  dismiss.text = 'Готово';
-  dismiss.automationText = 'dismiss-keyboard';
-  dismiss.ios.position = 'right';
-  dismiss.on('tap', () => editor.dismissSoftInput());
-  page.actionBar.actionItems.addItem(dismiss);
+  function importProject() {
+    if (!opening) page.frame.navigate({ create: () => createImport() });
+  }
+  add.on('tap', importProject);
 
-  const actions = new GridLayout();
-  actions.columns = 'auto, *';
-  actions.marginBottom = 12;
-  GridLayout.setRow(actions, 1);
-  layout.addChild(actions);
-  const footer = new StackLayout();
-  GridLayout.setRow(footer, 3);
-  const paste = new ProjectPasteControl(editor);
-  paste.on('pasteError', (args) => { errorView.text = args.message; });
-  actions.addChild(paste);
-  const run = new Button();
-  run.text = 'Запустить';
-  run.automationText = 'run-project';
-  run.className = 'primary';
-  GridLayout.setColumn(run, 1);
-  actions.addChild(run);
-  const clear = new Button();
-  clear.text = 'Очистить текст';
-  clear.automationText = 'clear-project-text';
-  clear.className = 'secondary';
-  clear.on('tap', () => { editor.text = ''; editor.dismissSoftInput(); });
-  footer.addChild(clear);
-  const reopen = new Button();
-  reopen.text = 'Открыть сохранённый проект';
-  reopen.automationText = 'open-saved-project';
-  reopen.className = 'secondary';
-  reopen.isEnabled = false;
-  footer.addChild(reopen);
-  const errorView = label('', 'error');
-  errorView.automationText = 'import-error';
-  footer.addChild(errorView);
-  footer.addChild(label('После импорта проект доступен без сети. Core • iOS • ns-preview/1', 'muted'));
-  layout.addChild(footer);
-  page.content = layout;
-
-  let saved = null;
-  let busy = true;
-  run.isEnabled = false;
-
-  async function launch(raw) {
-    if (busy) return;
-    editor.dismissSoftInput();
-    busy = true;
-    run.isEnabled = false;
-    reopen.isEnabled = false;
-    errorView.text = '';
-    let directory;
-    let guest;
+  async function refresh() {
     try {
-      const project = parsePackage(raw);
-      directory = await storage.stage(project);
-      guest = createGuest(project, directory);
-      const back = new ActionItem();
-      back.text = 'Оболочка';
-      back.ios.position = 'left';
-      back.on('tap', () => page.frame.goBack());
-      guest.page.actionBar.actionItems.addItem(back);
-      guest.page.once(Page.loadedEvent, () => {
-        try {
-          storage.save(raw);
-          saved = { raw, project };
-          reopen.isEnabled = true;
-        } catch (error) { errorView.text = `Ошибка сохранения: ${error.message || error}`; }
+      const apps = await storage.listApps();
+      content.removeChildren();
+      content.addChild(label('Ваши приложения', 'launcher-title'));
+      content.addChild(label('Одна библиотека. Любые истории.', 'launcher-description'));
+      const banner = new GridLayout();
+      banner.columns = '*,auto';
+      banner.className = 'launcher-banner';
+      const message = new StackLayout();
+      message.addChild(label('Из строки — в приложение', 'launcher-card-title'));
+      message.addChild(label('Вставьте пакет. Он останется на iPhone.', 'launcher-caption'));
+      banner.addChild(message);
+      const paste = new Button();
+      paste.text = 'Добавить';
+      paste.automationText = 'import-from-library';
+      paste.className = 'launcher-primary';
+      paste.on('tap', importProject);
+      GridLayout.setColumn(paste, 1);
+      banner.addChild(paste);
+      content.addChild(banner);
+      const count = label(`БИБЛИОТЕКА · ${apps.length}`, 'launcher-section');
+      count.automationText = 'library-count';
+      content.addChild(count);
+      const error = label('', 'error');
+      error.automationText = 'launcher-error';
+      content.addChild(error);
+
+      if (!apps.length) {
+        const empty = new StackLayout();
+        empty.className = 'launcher-empty';
+        empty.addChild(label('＋', 'launcher-empty-icon'));
+        empty.addChild(label('Здесь начинается\nваша коллекция', 'launcher-empty-title'));
+        empty.addChild(label('Скопируйте .preview.txt из примера или своего проекта и нажмите «Добавить».', 'launcher-caption'));
+        content.addChild(empty);
+      }
+      const grid = new GridLayout();
+      grid.columns = '*,*';
+      grid.rows = Array(Math.ceil(apps.length / 2)).fill('auto').join(',');
+      for (const [index, record] of apps.entries()) {
+        const card = new StackLayout();
+        card.className = 'launcher-card';
+        card.marginRight = index % 2 === 0 ? 6 : 0;
+        card.marginLeft = index % 2 === 1 ? 6 : 0;
+        GridLayout.setRow(card, Math.floor(index / 2));
+        GridLayout.setColumn(card, index % 2);
+        const top = new GridLayout();
+        top.columns = '*,40';
+        let icon;
+        if (record.iconBase64) {
+          try {
+            const source = ImageSource.fromBase64Sync(record.iconBase64);
+            if (source) { icon = new Image(); icon.imageSource = source; }
+          } catch (problem) { console.error(problem); }
+        }
+        if (!icon) icon = label(record.name.slice(0, 2).toUpperCase(), 'launcher-monogram');
+        icon.width = 48; icon.height = 48; icon.borderRadius = 14;
+        icon.backgroundColor = record.color;
+        icon.horizontalAlignment = 'left';
+        top.addChild(icon);
+        const menu = new Button();
+        menu.text = '•••';
+        menu.className = 'launcher-menu';
+        menu.automationText = `delete-app-${record.name}`;
+        GridLayout.setColumn(menu, 1);
+        menu.on('tap', async () => {
+          if (opening) return;
+          if (await confirm({ title: `Удалить «${record.name}»?`, message: 'Приложение и его файлы данных будут удалены.', okButtonText: 'Удалить', cancelButtonText: 'Отмена' })) {
+            try { await storage.deleteApp(record.id); await refresh(); }
+            catch (problem) { error.text = problem.message || String(problem); }
+          }
+        });
+        top.addChild(menu);
+        card.addChild(top);
+        const title = label(record.name, 'launcher-card-title');
+        title.marginTop = 14;
+        title.height = 42;
+        card.addChild(title);
+        const description = label(record.description || 'Готово к запуску · офлайн', 'launcher-caption');
+        description.height = 42;
+        card.addChild(description);
+        const open = new Button();
+        open.text = 'Открыть';
+        open.automationText = `open-app-${record.name}`;
+        open.className = 'launcher-open';
+        open.on('tap', async () => {
+          if (opening) return;
+          opening = true;
+          error.text = '';
+          try { await openSession(page, record, () => { opening = false; refresh(); }); }
+          catch (problem) { opening = false; error.text = `Ошибка запуска: ${problem.message || problem}`; }
+        });
+        card.addChild(open);
+        grid.addChild(card);
+      }
+      content.addChild(grid);
+      const plugins = new Button();
+      plugins.text = `${packages.length - 1} встроенных плагина  ›`;
+      plugins.automationText = 'show-plugins';
+      plugins.className = 'launcher-plugins';
+      plugins.on('tap', () => {
+        page.frame.navigate({ create: () => {
+          const info = new Page();
+          info.actionBar.title = 'Встроенные модули';
+          const list = new ScrollView();
+          const names = label(packages.join('\n\n'), 'plugin-list');
+          names.padding = 20;
+          list.content = names;
+          info.content = list;
+          return info;
+        } });
       });
-      guest.page.on(Page.navigatedFromEvent, (args) => {
-        if (!args.isBackNavigation) return;
-        guest.dispose();
-        storage.removeStage(directory).catch((error) => console.error(error));
-      });
-      page.frame.navigate({ create: () => guest.page });
-    } catch (error) {
-      if (guest) guest.dispose();
-      if (directory) await storage.removeStage(directory).catch(console.error);
-      errorView.text = `Ошибка импорта: ${error.message || String(error)}`;
-      console.error(error.stack || error);
-    } finally {
-      busy = false;
-      run.isEnabled = true;
-      reopen.isEnabled = Boolean(saved);
+      content.addChild(plugins);
+      content.addChild(label('Собрать → скопировать → добавить → открыть', 'launcher-footnote'));
+    } catch (problem) {
+      content.removeChildren();
+      content.addChild(label(`Ошибка библиотеки: ${problem.message || problem}`, 'error'));
     }
   }
 
-  run.on('tap', () => launch(editor.text));
-  reopen.on('tap', () => { if (saved) launch(saved.raw); });
   page.once(Page.loadedEvent, async () => {
-    try {
-      await storage.clearAbandonedStages();
-      saved = await storage.readSaved();
-      reopen.isEnabled = Boolean(saved);
-    } catch (error) { errorView.text = `Ошибка сохранённого проекта: ${error.message || error}`; }
-    finally { busy = false; run.isEnabled = true; }
+    await storage.clearAbandonedStages().catch(console.error);
+    await refresh();
   });
+  page.on(Page.navigatedToEvent, refresh);
   return page;
 }
 

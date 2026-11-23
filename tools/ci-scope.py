@@ -20,8 +20,8 @@ else:
 native_files = {
     'package.json', 'package-lock.json', 'Gemfile', 'Gemfile.lock', '.node-version',
     'nativescript.config.ts', 'webpack.config.js', 'tsconfig.json', 'ci/Podfile.lock',
-    'ci/runtime-catalog.json', 'ci/requested-entitlements.plist', 'ci/toolchain.json',
-    'tools/prepare-ios.sh', 'tools/prepare-platform.sh', 'tools/build-simulator.sh',
+    'packager/catalog.json', 'packager/protocol.cjs', 'ci/requested-entitlements.plist', 'ci/toolchain.json',
+    'tools/prepare-ios.sh', 'tools/prepare-platform.sh', 'tools/prepare-native-dependencies.cjs', 'tools/build-simulator.sh',
     'tools/build-unsigned.sh', 'tools/verify-ipa.py', 'tools/capability-report.mjs',
     'tools/check-no-embedded-example.py', 'tools/ios-layout.rb',
 }
@@ -32,7 +32,7 @@ def native(name):
 def relevant(name):
     if not name or name.endswith('.md') or name in {'LICENSE', '.gitignore'}:
         return False
-    return native(name) or name.startswith(('examples/', 'tests/', 'tools/', 'ci/', '.github/workflows/ci.yml'))
+    return native(name) or name.startswith(('examples/', 'packager/', 'tests/', 'tools/', 'ci/', '.github/workflows/ci.yml'))
 
 def fingerprint(names):
     digest = hashlib.sha256()
@@ -44,7 +44,7 @@ def fingerprint(names):
 
 node_hash = fingerprint(['package.json', 'package-lock.json', '.node-version'])
 native_dependencies = {'package.json', 'package-lock.json', 'Gemfile', 'Gemfile.lock', '.node-version', 'ci/toolchain.json',
-                       'nativescript.config.ts', 'ci/Podfile.lock', 'tools/prepare-platform.sh'}
+                       'nativescript.config.ts', 'ci/Podfile.lock', 'tools/prepare-platform.sh', 'tools/prepare-native-dependencies.cjs'}
 platform_hash = fingerprint([name for name in tracked if name in native_dependencies
                              or name == 'App_Resources/iOS/Podfile' or name.endswith('.podspec')])
 shell_hash = fingerprint([name for name in tracked if native(name)])

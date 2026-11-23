@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 
 if (process.env.CI !== 'true') throw new Error('Capability reporting is CI-only.');
-const catalog = JSON.parse(await readFile('ci/runtime-catalog.json', 'utf8'));
+const catalog = JSON.parse(await readFile('packager/catalog.json', 'utf8'));
 const versions = Object.fromEntries(await Promise.all(catalog.packages.map(async (name) => {
   const installed = JSON.parse(await readFile(new URL(`../node_modules/${name}/package.json`, import.meta.url), 'utf8'));
   return [name, installed.version];

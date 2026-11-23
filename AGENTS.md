@@ -42,9 +42,11 @@ dependency installation, and avoidable native compilation as defects.
   lockfiles/artifacts produced by CI are allowed.
 - Keep the plan in PLAN.md under `check`, `in-progress`, and `done`. CI-dependent
   completion claims require evidence, including the run URL and tested commit.
-- The first milestone is only the supplied GPU API check through the real
-  clipboard import flow, plus integration CI and an unsigned device IPA. Stop
-  after that milestone; do not start counter/location/Canvas work automatically.
+- The initial GPU-only milestone was extended by the user's launcher request:
+  implement a persistent app library, a compiled plugin catalog, and one CI
+  export flow used by the examples. Keep ZIP import out of scope for now.
+- CI is authorized for the shell and project exports. The user's no-run request
+  applies to ad-hoc JSON demos, not shell builds or integration checks.
 - Use one package/import flow for every project size. Do not introduce a special
   two-file XML/JS format, a dev-server dependency, or a QR-based import flow.
 - Do not claim that simulator checks prove physical background GPU execution,

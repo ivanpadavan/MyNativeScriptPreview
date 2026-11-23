@@ -6,6 +6,7 @@
   "main": "src/app.js",
   "engines": { "node": ">=22" },
   "scripts": {
+    "preview:build": "node packager/cli.mjs build",
     "preview:export": "node tools/export-project.mjs",
     "examples:build": "node tools/export-examples.mjs",
     "example:build": "node tools/export-project.mjs examples/gpu-check",

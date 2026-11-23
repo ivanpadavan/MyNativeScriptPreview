@@ -2,10 +2,16 @@ name: Bootstrap dependency locks
 
 on:
   workflow_dispatch:
+    inputs:
+      prepare_ios:
+        description: Resolve CocoaPods and cache native platform dependencies without compiling the app
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
       - package.json
+      - packager/package.json
       - Gemfile
       - .node-version
       - .github/workflows/bootstrap-locks.yml
@@ -13,12 +19,19 @@ on:
 permissions:
   contents: read
 
+env:
+  CI: 'true'
+  NS_CLI_NO_ANALYTICS: '1'
+  BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
+
 jobs:
   locks:
     runs-on: macos-26
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -28,15 +41,66 @@ jobs:
       - name: Resolve locks in CI only
         run: |
           npm install --package-lock-only --ignore-scripts
+          npm install --prefix packager --package-lock-only --ignore-scripts
           bundle lock
-          mkdir -p artifacts/dependency-locks
+      - name: Read exact dependency content keys
+        id: keys
+        run: python3 tools/ci-scope.py
+      - uses: actions/cache@v4
+        id: npm
+        if: inputs.prepare_ios == true
+        with:
+          path: node_modules
+          key: node-${{ runner.os }}-${{ runner.arch }}-${{ steps.keys.outputs.node_hash }}
+      - name: Install JS dependencies only on an exact cache miss
+        if: inputs.prepare_ios == true && steps.npm.outputs.cache-hit != 'true'
+        run: npm ci
+      - uses: actions/cache@v4
+        id: gems
+        if: inputs.prepare_ios == true
+        with:
+          path: vendor/bundle
+          key: gems-macos-arm64-ruby${{ steps.keys.outputs.ruby }}-${{ hashFiles('Gemfile', 'Gemfile.lock') }}
+      - name: Configure Ruby dependency location
+        if: inputs.prepare_ios == true
+        run: bundle config set --local path vendor/bundle
+      - name: Install Ruby dependencies only on an exact cache miss
+        if: inputs.prepare_ios == true && steps.gems.outputs.cache-hit != 'true'
+        run: BUNDLE_FROZEN=true bundle install
+      - name: Resolve native dependencies without bundling or compiling the app
+        if: inputs.prepare_ios == true
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_${{ steps.keys.outputs.xcode }}.app/Contents/Developer
+          bash tools/prepare-platform.sh
+          if [[ -f platforms/ios/Podfile.lock ]]; then
+            cp platforms/ios/Podfile.lock ci/Podfile.lock
+            git add -N ci/Podfile.lock
+          fi
+      - name: Read final native dependency content key
+        id: final
+        if: inputs.prepare_ios == true
+        run: python3 tools/ci-scope.py
+      - uses: actions/cache/save@v4
+        if: inputs.prepare_ios == true
+        with:
+          path: platforms/ios
+          key: ios-platform-v2-xcode${{ steps.final.outputs.xcode }}-${{ steps.final.outputs.platform_hash }}
+      - name: Collect generated lockfiles
+        run: |
+          mkdir -p artifacts/dependency-locks/packager artifacts/dependency-locks/ci
           cp package-lock.json Gemfile.lock artifacts/dependency-locks/
+          cp packager/package-lock.json artifacts/dependency-locks/packager/
+          if [[ -f ci/Podfile.lock ]]; then cp ci/Podfile.lock artifacts/dependency-locks/ci/; fi
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-locks
           path: artifacts/dependency-locks/
           if-no-files-found: error
-      - name: Next step
-        run: |
-          echo 'Commit package-lock.json and Gemfile.lock from this artifact, then rerun Preview CI.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Nothing was installed or checked on a local machine.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: dependency-diagnostics
+          path: |
+            artifacts/*.log
+            platforms/ios/Podfile
+          if-no-files-found: ignore

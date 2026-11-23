@@ -4,7 +4,9 @@ An iOS NativeScript shell for applications transferred as one text package.
 The shell and its compiled native dependencies are installed once. Imported
 projects execute locally without QR codes, npm, or a development server.
 
-**Status:** implementation published; CI bootstrapping is in progress. No successful native build or IPA is claimed yet.
+**Status:** the unsigned device IPA and four real-clipboard/GPU integration
+scenarios passed [CI at d19c4a6](https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215).
+The keyboard accessibility fix is undergoing a separate integration run.
 The first milestone is **GPU Check only**. See [PLAN.md](PLAN.md).
 
 ## One flow
@@ -32,16 +34,18 @@ Source editing and uploading files are the only local development operations.
    on a macOS runner and uploads the `dependency-locks` artifact. Commit those
    generated files without resolving them locally.
 3. **Preview CI** builds the shell, exports the GPU example and runs native UI
-   integration tests. On the first iOS preparation it publishes `ios-pod-lock`.
-   Commit its `Podfile.lock` as `ci/Podfile.lock`.
-4. Rerun **Preview CI**. Release artifact publication requires all locks to be
-   committed, simulator scenarios to pass and the unsigned device IPA to verify.
+   integration tests. The current Core-only shell has no CocoaPods dependencies
+   and produces no `Podfile.lock`. If plugins introduce CocoaPods dependencies,
+   download the generated lock from `native-diagnostics` and commit it as
+   `ci/Podfile.lock`; publication requires an exact committed lock when present.
+4. Release artifact publication requires dependency locks to be committed,
+   simulator scenarios to pass and the unsigned device IPA to verify.
 5. Download `preview-verified-<commit>`. It contains the IPA, GPU package,
    requested entitlements, capability report, and signing notes.
 
 Node is fixed in `.node-version`; Apple tools and the simulator are fixed in `ci/toolchain.json`.
-Dependency versions become exact through CI-generated lockfiles. CocoaPods
-resolution must match the committed lock in both simulator and device jobs.
+Dependency versions become exact through CI-generated lockfiles. When CocoaPods
+is used, resolution must match the committed lock in both simulator and device jobs.
 Simulator tests use ad-hoc signing without an Apple account. The **device IPA**
 is unsigned, built for arm64/iPhoneOS, and contains no provisioning profile.
 

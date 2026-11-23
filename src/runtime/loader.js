@@ -1,9 +1,9 @@
 const core = require('@nativescript/core');
 const { filePath } = require('../../shared/package.cjs');
+const catalog = require('./catalog');
 
 // A guest receives the host's actual Core instance: no second runtime or Page
 // class, no network resolver, no npm installation on the device.
-const builtins = Object.freeze({ '@nativescript/core': core });
 
 function relativePath(specifier, importer) {
   const parts = importer.split('/').slice(0, -1);
@@ -17,7 +17,10 @@ function relativePath(specifier, importer) {
   return filePath(parts.join('/'));
 }
 
-function createGuest(project, resourceDirectory) {
+function createGuest(project, resourceDirectory, options = {}) {
+  for (const name of project.requires || []) {
+    if (!catalog.hasModule(name)) throw new Error(`Модуль не включён в эту оболочку: ${name}`);
+  }
   const cache = new Map();
   let page;
   let entry;
@@ -45,6 +48,10 @@ function createGuest(project, resourceDirectory) {
   }
 
   const context = Object.freeze({
+    appId: options.appId || null,
+    dataPath: options.dataPath || resourceDirectory,
+    packages: catalog.packages,
+    close() { if (options.close) options.close(); },
     resourcePath(name) {
       const path = filePath(name);
       if (!Object.hasOwn(project.files, path)) throw new Error(`Ресурс не найден: ${path}`);
@@ -67,7 +74,7 @@ function createGuest(project, resourceDirectory) {
     cache.set(name, module);
     function guestRequire(specifier) {
       if (typeof specifier !== 'string') throw new Error('Имя модуля должно быть строкой.');
-      if (Object.hasOwn(builtins, specifier)) return builtins[specifier];
+      if (catalog.hasModule(specifier)) return catalog.getModule(specifier);
       if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
         throw new Error(`Модуль не включён в эту оболочку: ${specifier}`);
       }

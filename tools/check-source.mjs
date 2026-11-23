@@ -10,16 +10,18 @@ const { parsePackage } = require('../shared/package.cjs');
 async function inspect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const name = path.join(directory, entry.name);
-    if (entry.isDirectory()) await inspect(name);
+    if (entry.isDirectory() && entry.name !== 'node_modules') await inspect(name);
     else if (/\.(?:c?js|mjs)$/.test(name)) execFileSync(process.execPath, ['--check', name], { stdio: 'inherit' });
   }
 }
-for (const directory of ['src', 'shared', 'tools']) await inspect(directory);
+for (const directory of ['src', 'shared', 'tools', 'packager']) await inspect(directory);
 const project = parsePackage(await readFile('dist/gpu-check.preview.txt', 'utf8'));
 if (project.name !== 'GPU Check') throw new Error('Unexpected built example.');
-const expectedExport = new Set(['@nativescript/core']);
-const catalog = JSON.parse(await readFile('ci/runtime-catalog.json', 'utf8'));
-if (catalog.packages.length !== expectedExport.size || catalog.packages.some((name) => !expectedExport.has(name))) {
+const registry = await readFile('src/runtime/catalog.js', 'utf8');
+const expectedExport = new Set([...registry.matchAll(/'([^']+)': \(\) => require\('/g)].map((match) => match[1]));
+const catalog = JSON.parse(await readFile('packager/catalog.json', 'utf8'));
+const manifest = JSON.parse(await readFile('package.json', 'utf8'));
+if (catalog.packages.length !== expectedExport.size || catalog.packages.some((name) => !expectedExport.has(name) || !manifest.dependencies[name])) {
   throw new Error('Host catalog and exporter externals disagree.');
 }
 const info = await readFile('App_Resources/iOS/Info.plist', 'utf8');

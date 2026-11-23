@@ -17,7 +17,7 @@ if [[ ${#apps[@]} -ne 1 || ! -d "${apps[0]}" ]]; then echo 'Expected one archive
 ditto "${apps[0]}" \
   artifacts/package/Payload/MyNativeScriptPreview.app
 cp ci/requested-entitlements.plist artifacts/package/Payload/MyNativeScriptPreview.app/PreviewRequestedEntitlements.plist
-cp ci/runtime-catalog.json artifacts/package/Payload/MyNativeScriptPreview.app/PreviewRuntimeCatalog.json
+cp packager/catalog.json artifacts/package/Payload/MyNativeScriptPreview.app/PreviewRuntimeCatalog.json
 cp ci/requested-entitlements.plist artifacts/requested-entitlements.plist
 # Package an unsigned device .app directly; exportArchive would require signing.
 ditto -c -k --keepParent artifacts/package/Payload artifacts/MyNativeScriptPreview-unsigned.ipa

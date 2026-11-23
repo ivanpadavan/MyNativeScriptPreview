@@ -1,0 +1,63 @@
+name: Preview text syntax
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'previews/**'
+      - 'shared/package.cjs'
+      - '.node-version'
+      - '.github/workflows/preview-text.yml'
+  pull_request:
+    paths:
+      - 'previews/**'
+      - 'shared/package.cjs'
+      - '.node-version'
+      - '.github/workflows/preview-text.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-text-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  syntax:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Parse the actual paste packages and compile their JS bodies
+        run: |
+          node <<'JS'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { parsePackage } = require('./shared/package.cjs');
+          const names = fs.readdirSync('previews').filter(name => name.endsWith('.preview.txt'));
+          if (!names.length) throw new Error('No text packages found.');
+          for (const name of names) {
+            const packet = parsePackage(fs.readFileSync(path.join('previews', name), 'utf8'));
+            for (const [filename, file] of Object.entries(packet.files)) {
+              if (file.encoding !== 'utf8' || !/\.(?:c?js)$/.test(filename)) continue;
+              try {
+                // Parse the decoded JS exactly as a paste loader does. JSON syntax
+                // alone cannot catch a newline embedded in a JS string literal.
+                new Function('require', 'module', 'exports', '__filename', '__dirname',
+                  'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', file.data);
+              } catch (error) {
+                throw new Error(`${name}/${filename}: ${error.message}`);
+              }
+            }
+            console.log(`${name}: package and decoded JavaScript syntax passed`);
+          }
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-text-checked-${{ github.sha }}
+          path: previews/*.preview.txt
+          if-no-files-found: error

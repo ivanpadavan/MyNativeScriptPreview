@@ -12,11 +12,7 @@
 
 ## check
 
-- [ ] Commit the CocoaPods lockfile from the first iOS preparation in CI; require unchanged resolution on subsequent runs.
-- [ ] Pass package/source checks, simulator integration tests, and unsigned IPA verification in CI.
 - [ ] Verify rational CI routing: documentation skips builds, dependency-cache hits skip installs, and example/test-only changes reuse the compiled native shell.
-- [ ] Make successful IPA, GPU text package, requested entitlements, capability report, and test evidence available as CI artifacts.
-- [ ] First-stage acceptance: import the GPU package through the real paste UI, run `checkGPU`, return, restart, and repeat offline. API unavailability on the iOS 26+ test runner is a failure, not a substitute for a successful check.
 - [ ] Stop implementation after the GPU milestone; do not start the following examples automatically.
 - [ ] `examples/tap-counter`: counter and reset, same exporter and import flow; integration tests exercise repeated taps and restart.
 - [ ] `examples/background-location`: start/stop tracking, permission handling, persisted events, background updates. Simulator integration checks plus explicit physical-device CI evidence for actual background behavior.
@@ -25,11 +21,13 @@
 
 ## in-progress
 
+- [ ] Fix the manually authored Netflix paste package's escaped line breaks; validate decoded JavaScript in a standalone Linux CI job without installing dependencies or rebuilding the shell. This is a syntax check, not native UI acceptance.
 - [ ] Fix keyboard covering import actions: place Paste/Run above the editor, provide explicit keyboard dismissal, and verify real clipboard paste and launch with the keyboard open in CI before publishing a replacement IPA.
-- [ ] Implement the shared package contract, CI exporter, offline loader, iOS paste shell, GPU example, unsigned IPA pipeline, and XCUITest integration suite.
 
 ## done
 
+- [x] Shared package contract, exporter, offline loader, native paste shell, GPU example, unsigned device IPA, and all four integration scenarios passed at `d19c4a6`: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215 . The verified artifact includes the IPA, GPU text package, entitlement request, capability report, and signing notes; test logs and xcresults are separate artifacts. The suite exercises real clipboard import, numeric native GPU response, repeat import, restart with empty clipboard, and failed imports preserving the working project.
+- [x] CocoaPods lock applicability checked in the successful native run above: the Core-only shell has no Podfile/CocoaPods dependencies and produces no Podfile.lock. The pipeline requires an exact committed `ci/Podfile.lock` if future plugins produce one.
 - [x] Native device IPA verification and all four real-clipboard/GPU/import integration scenarios passed: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215 (`d19c4a6`). Final cache-reuse validation and publication evidence are still pending below the milestone boundary.
 - [x] Documentation-only routing verified: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45078008779 (`3f85027`); only Linux scope ran, all dependency/native/test jobs skipped, and the relevant native run continued.
 - [x] Source syntax, GPU TypeScript and text-package export passed in CI: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45077531877 (`fad5ad6`). This is not native/UI-test completion.

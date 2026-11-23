@@ -23,7 +23,7 @@ plugin, or guarantee permission/background execution.
 The launcher compiles the module catalog in `packager/catalog.json`. No iCloud, App Groups,
 APNs, HealthKit, NFC, Sign in with Apple, private entitlements, or managed
 capabilities are added automatically. Those would need separate provisioning
-and verification. The later plugin milestones expand the executable catalog.
+and verification. The current catalog contains Core plus 24 compiled plugins.
 
 CI has no Apple account credentials and cannot prove successful Personal Team
 signing or actual background GPU execution. `checkGPU` reports the system value;

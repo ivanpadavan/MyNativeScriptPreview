@@ -19,7 +19,7 @@ else:
 
 native_files = {
     'package.json', 'package-lock.json', 'Gemfile', 'Gemfile.lock', '.node-version',
-    'nativescript.config.ts', 'webpack.config.js', 'tsconfig.json', 'ci/Podfile.lock',
+    'nativescript.config.ts', 'webpack.config.js', 'tsconfig.json', 'ci/Podfile.lock', 'ci/Package.resolved',
     'packager/catalog.json', 'packager/protocol.cjs', 'ci/requested-entitlements.plist', 'ci/toolchain.json',
     'tools/prepare-ios.sh', 'tools/prepare-platform.sh', 'tools/prepare-native-dependencies.cjs', 'tools/build-simulator.sh',
     'tools/build-unsigned.sh', 'tools/verify-ipa.py', 'tools/capability-report.mjs',
@@ -44,7 +44,7 @@ def fingerprint(names):
 
 node_hash = fingerprint(['package.json', 'package-lock.json', '.node-version'])
 native_dependencies = {'package.json', 'package-lock.json', 'Gemfile', 'Gemfile.lock', '.node-version', 'ci/toolchain.json',
-                       'nativescript.config.ts', 'ci/Podfile.lock', 'tools/prepare-platform.sh', 'tools/prepare-native-dependencies.cjs'}
+                       'nativescript.config.ts', 'ci/Podfile.lock', 'ci/Package.resolved', 'tools/prepare-platform.sh', 'tools/prepare-native-dependencies.cjs'}
 platform_hash = fingerprint([name for name in tracked if name in native_dependencies
                              or name == 'App_Resources/iOS/Podfile' or name.endswith('.podspec')])
 shell_hash = fingerprint([name for name in tracked if native(name)])

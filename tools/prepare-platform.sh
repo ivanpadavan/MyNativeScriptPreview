@@ -7,10 +7,4 @@ export PATH="$PWD/node_modules/.bin:$PATH"
 if [[ ! -d platforms/ios ]]; then bundle exec ns platform add ios; fi
 if [[ -f ci/Podfile.lock ]]; then cp ci/Podfile.lock platforms/ios/Podfile.lock; fi
 bundle exec node tools/prepare-native-dependencies.cjs
-if [[ -f platforms/ios/Podfile ]]; then
-  if [[ -f ci/Podfile.lock ]]; then
-    bundle exec pod install --project-directory=platforms/ios --deployment
-  else
-    bundle exec pod install --project-directory=platforms/ios
-  fi
-fi
+if [[ -f ci/Podfile.lock ]]; then cmp ci/Podfile.lock platforms/ios/Podfile.lock; fi

@@ -68,6 +68,10 @@ jobs:
             cp platforms/ios/Podfile.lock ci/Podfile.lock
             git add -N ci/Podfile.lock
           fi
+          if [[ -f artifacts/native-locks/Package.resolved ]]; then
+            cp artifacts/native-locks/Package.resolved ci/Package.resolved
+            git add -N ci/Package.resolved
+          fi
       - name: Read final native dependency content key
         id: final
         if: inputs.prepare_ios == true
@@ -83,6 +87,7 @@ jobs:
           cp package-lock.json Gemfile.lock artifacts/dependency-locks/
           cp packager/package-lock.json artifacts/dependency-locks/packager/
           if [[ -f ci/Podfile.lock ]]; then cp ci/Podfile.lock artifacts/dependency-locks/ci/; fi
+          if [[ -f ci/Package.resolved ]]; then cp ci/Package.resolved artifacts/dependency-locks/ci/; fi
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-locks

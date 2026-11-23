@@ -9,6 +9,8 @@ xcodebuild \
   -sdk iphoneos \
   -destination 'generic/platform=iOS' \
   -archivePath "$PWD/artifacts/Preview.xcarchive" \
+  -clonedSourcePackagesDirPath "$PWD/platforms/ios/SourcePackages" \
+  -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
   CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER:-1}" PREVIEW_BUILD_REVISION="${GITHUB_SHA:-local}" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
   archive 2>&1 | tee artifacts/device-build.log

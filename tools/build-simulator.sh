@@ -9,6 +9,7 @@ xcodebuild \
   -clonedSourcePackagesDirPath "$PWD/platforms/ios/SourcePackages" \
   -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
   ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+  IPHONEOS_DEPLOYMENT_TARGET=16.0 \
   CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER:-1}" PREVIEW_BUILD_REVISION="${GITHUB_SHA:-local}" \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
   build 2>&1 | tee artifacts/simulator-build.log

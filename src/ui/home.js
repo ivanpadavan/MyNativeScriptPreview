@@ -37,11 +37,15 @@ function createHome() {
   scroll.content = content;
   page.content = scroll;
   let opening = false;
+  let importing = false;
 
   function importProject() {
-    if (!opening) page.frame.navigate({ create: () => createImport() });
+    if (opening || importing) return;
+    importing = true;
+    page.frame.navigate({ create: () => createImport() });
   }
   add.on('tap', importProject);
+  addAction.on('tap', importProject);
 
   async function refresh() {
     try {
@@ -170,7 +174,7 @@ function createHome() {
     await storage.clearAbandonedStages().catch(console.error);
     await refresh();
   });
-  page.on(Page.navigatedToEvent, refresh);
+  page.on(Page.navigatedToEvent, () => { importing = false; refresh(); });
   return page;
 }
 

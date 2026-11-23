@@ -20,7 +20,7 @@ Background audio, location, fetch, processing, and Bluetooth modes are declared
 there too. Declarations do not request access on launch, install a corresponding
 plugin, or guarantee permission/background execution.
 
-The first build only compiles Core and BackgroundTasks. No iCloud, App Groups,
+The launcher compiles the module catalog in `packager/catalog.json`. No iCloud, App Groups,
 APNs, HealthKit, NFC, Sign in with Apple, private entitlements, or managed
 capabilities are added automatically. Those would need separate provisioning
 and verification. The later plugin milestones expand the executable catalog.

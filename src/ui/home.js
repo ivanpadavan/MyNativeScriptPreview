@@ -157,6 +157,9 @@ function createHome() {
       });
       content.addChild(plugins);
       content.addChild(label('Собрать → скопировать → добавить → открыть', 'launcher-footnote'));
+      const revision = String(NSBundle.mainBundle.objectForInfoDictionaryKey('PreviewBuildRevision') || '').slice(0, 7);
+      content.addChild(label(`Launcher 0.2 · ${revision}`, 'launcher-footnote'));
+      scroll.scrollToVerticalOffset(0, false);
     } catch (problem) {
       content.removeChildren();
       content.addChild(label(`Ошибка библиотеки: ${problem.message || problem}`, 'error'));

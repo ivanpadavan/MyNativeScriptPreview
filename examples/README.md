@@ -1,23 +1,21 @@
 # Examples
 
-Every example uses the same `ns-preview/1` package. There is no special format
-for small projects. GitHub Actions builds the examples; the phone executes the
-result without a dev server.
+Every example uses the same standalone Node builder; no example-specific compiler.
 
-## First milestone
+```sh
+# Once, from the repository root:
+npm --prefix packager ci
+# Any example:
+cd examples/tap-counter
+npm run build
+```
 
-`gpu-check` is the only example implemented in this milestone. Download
-`gpu-check.preview.txt` from a successful CI run, open it as text, copy all,
-paste in the shell, and tap **Запустить**.
+Copy the complete `dist/<example>.preview.txt`, add it to the launcher and open
+its card. The same build works outside CI and on Linux, macOS or Windows.
+See [QUICKSTART.md](../QUICKSTART.md) to write your own app.
 
-## Later milestones
-
-The following directories will be implemented in order after explicit follow-up:
-
-- `tap-counter`: increment/reset and lifecycle integration tests.
-- `background-location`: permissions, recording, background location events,
-  and physical-device CI validation for actual background delivery.
-- `canvas`: complex interactive animated rendering with local assets and cleanup.
-
-Their detailed acceptance criteria and current status are in `PLAN.md`. They
-are not stub examples and are not included in the first build matrix.
+- `gpu-check`: native BackgroundTasks resource query; no background GPU workload.
+- `tap-counter`: persistent counter and Haptics.
+- `background-location`: permission request, start/stop, persisted location journal.
+  Simulator coverage is not evidence of physical background delivery.
+- `canvas`: animated native Canvas 2D, pixel readback and palette interaction.

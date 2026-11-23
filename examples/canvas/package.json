@@ -1,0 +1,1 @@
+{"name":"preview-example-canvas","private":true,"scripts":{"build":"node ../../packager/cli.mjs build ."}}

@@ -1,0 +1,1 @@
+{"name":"preview-example-gpu-check","private":true,"scripts":{"build":"node ../../packager/cli.mjs build ."}}

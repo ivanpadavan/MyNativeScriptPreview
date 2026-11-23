@@ -103,7 +103,7 @@ jobs:
         if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true'
         with:
           path: platforms/ios
-          key: ios-platform-v1-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
+          key: ios-platform-v2-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
       - name: Prepare native platform dependencies only on a dependency-cache miss
         if: matrix.label == 'macos' && needs.scope.outputs.shell_hit != 'true' && steps.platform.outputs.cache-hit != 'true'
         run: bash tools/prepare-platform.sh
@@ -126,15 +126,15 @@ jobs:
           fail-on-cache-miss: true
       - name: Build example and check source syntax/types
         run: |
-          npm run example:build
+          npm run examples:build
           npm run ci:source
           npx --no-install tsc --noEmit --project ci/tsconfig.examples.json
           python3 -m py_compile tools/check-no-embedded-example.py tools/verify-ipa.py tools/ci-scope.py
           for script in tools/*.sh; do bash -n "$script"; done
       - uses: actions/upload-artifact@v4
         with:
-          name: gpu-text-package
-          path: dist/gpu-check.preview.txt
+          name: example-text-packages
+          path: dist/*.preview.txt
           if-no-files-found: error
 
   native:
@@ -177,7 +177,7 @@ jobs:
         if: steps.shell.outputs.cache-hit != 'true'
         with:
           path: platforms/ios
-          key: ios-platform-v1-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
+          key: ios-platform-v2-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
           fail-on-cache-miss: true
       - name: Prepare native sources only on a shell-cache miss
         if: steps.shell.outputs.cache-hit != 'true'
@@ -233,7 +233,7 @@ jobs:
     concurrency:
       group: integration-${{ github.ref }}
       cancel-in-progress: true
-    timeout-minutes: 12
+    timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
@@ -250,7 +250,7 @@ jobs:
           path: artifacts/shell
       - uses: actions/download-artifact@v4
         with:
-          name: gpu-text-package
+          name: example-text-packages
           path: dist
       - name: Configure standalone UI runner
         run: |
@@ -258,7 +258,7 @@ jobs:
           bundle config set --local path vendor/bundle
           bundle exec ruby tools/add-ui-tests.rb
       - name: Boot simulator and install prebuilt shell
-        timeout-minutes: 4
+        timeout-minutes: 5
         run: bash tools/run-integration.sh boot
       - name: Build standalone XCTest runner
         timeout-minutes: 4
@@ -267,7 +267,7 @@ jobs:
         timeout-minutes: 4
         run: bash tools/run-integration.sh smoke
       - name: Run remaining integration scenarios
-        timeout-minutes: 5
+        timeout-minutes: 14
         run: bash tools/run-integration.sh test
       - name: Clean up simulator
         if: always()
@@ -299,7 +299,7 @@ jobs:
           path: artifacts/shell
       - uses: actions/download-artifact@v4
         with:
-          name: gpu-text-package
+          name: example-text-packages
           path: dist
       - name: Require committed native dependency resolution
         run: |
@@ -314,7 +314,7 @@ jobs:
             artifacts/shell/MyNativeScriptPreview-unsigned.ipa
             artifacts/shell/requested-entitlements.plist
             artifacts/shell/capabilities.json
-            dist/gpu-check.preview.txt
+            dist/*.preview.txt
             ci/signing.md
           if-no-files-found: error
           retention-days: 30

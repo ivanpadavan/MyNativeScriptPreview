@@ -1,0 +1,100 @@
+name: Export preview project
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project folder containing preview.project.json
+        required: true
+        default: examples/gpu-check
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  request:
+    runs-on: ubuntu-24.04
+    outputs:
+      project: ${{ steps.request.outputs.project }}
+      project_deps: ${{ steps.request.outputs.project_deps }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate project selection
+        id: request
+        env:
+          PREVIEW_PROJECT: ${{ inputs.project }}
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          name=os.environ['PREVIEW_PROJECT']
+          if not re.fullmatch(r'[a-zA-Z0-9_./-]+', name): raise SystemExit('Invalid project path.')
+          root=pathlib.Path.cwd().resolve()
+          project=(root/name).resolve()
+          if root not in project.parents: raise SystemExit('Project must be inside the repository.')
+          if not (project/'preview.project.json').is_file(): raise SystemExit('Missing preview.project.json.')
+          manifest=json.loads((project/'package.json').read_text()) if (project/'package.json').is_file() else {}
+          deps=bool(manifest.get('dependencies') or manifest.get('devDependencies'))
+          if deps and not (project/'package-lock.json').is_file(): raise SystemExit('Commit the project package-lock.json first.')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+            out.write(f'project={project.relative_to(root)}\nproject_deps={str(deps).lower()}\n')
+          PY
+
+  dependencies:
+    needs: request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/cache@v4
+        id: packager
+        with:
+          path: packager/node_modules
+          key: packager-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packager/package.json', 'packager/package-lock.json', '.node-version') }}
+      - name: Install builder dependencies only on an exact cache miss
+        if: steps.packager.outputs.cache-hit != 'true'
+        run: npm --prefix packager ci
+      - uses: actions/cache@v4
+        id: project
+        if: needs.request.outputs.project_deps == 'true'
+        with:
+          path: ${{ needs.request.outputs.project }}/node_modules
+          key: preview-project-${{ runner.os }}-${{ runner.arch }}-${{ needs.request.outputs.project }}-${{ hashFiles(format('{0}/package.json', needs.request.outputs.project), format('{0}/package-lock.json', needs.request.outputs.project), '.node-version') }}
+      - name: Install project JS dependencies only on an exact cache miss
+        if: needs.request.outputs.project_deps == 'true' && steps.project.outputs.cache-hit != 'true'
+        env:
+          PREVIEW_PROJECT: ${{ needs.request.outputs.project }}
+        run: npm --prefix "$PREVIEW_PROJECT" ci
+
+  export:
+    needs: [request, dependencies]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/cache/restore@v4
+        with:
+          path: packager/node_modules
+          key: packager-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packager/package.json', 'packager/package-lock.json', '.node-version') }}
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v4
+        if: needs.request.outputs.project_deps == 'true'
+        with:
+          path: ${{ needs.request.outputs.project }}/node_modules
+          key: preview-project-${{ runner.os }}-${{ runner.arch }}-${{ needs.request.outputs.project }}-${{ hashFiles(format('{0}/package.json', needs.request.outputs.project), format('{0}/package-lock.json', needs.request.outputs.project), '.node-version') }}
+          fail-on-cache-miss: true
+      - name: Build the same text package as the local CLI
+        env:
+          PREVIEW_PROJECT: ${{ needs.request.outputs.project }}
+        run: node packager/cli.mjs build "$PREVIEW_PROJECT" --out dist/app.preview.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-project-text
+          path: dist/app.preview.txt
+          if-no-files-found: error

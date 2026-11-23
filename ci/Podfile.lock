@@ -1,0 +1,76 @@
+PODS:
+  - AFNetworking (4.0.2):
+    - AFNetworking/NSURLSession (= 4.0.2)
+    - AFNetworking/Privacy (= 4.0.2)
+    - AFNetworking/Reachability (= 4.0.2)
+    - AFNetworking/Security (= 4.0.2)
+    - AFNetworking/Serialization (= 4.0.2)
+    - AFNetworking/UIKit (= 4.0.2)
+  - AFNetworking/NSURLSession (4.0.2):
+    - AFNetworking/Reachability
+    - AFNetworking/Security
+    - AFNetworking/Serialization
+  - AFNetworking/Privacy (4.0.2)
+  - AFNetworking/Reachability (4.0.2):
+    - AFNetworking/Privacy
+  - AFNetworking/Security (4.0.2):
+    - AFNetworking/Privacy
+  - AFNetworking/Serialization (4.0.2):
+    - AFNetworking/Privacy
+  - AFNetworking/UIKit (4.0.2):
+    - AFNetworking/NSURLSession
+  - lottie-ios (4.4.1)
+  - QBImagePickerController (3.4.0)
+  - SAMKeychain (1.5.3)
+  - SDWebImage (5.21.7):
+    - SDWebImage/Core (= 5.21.7)
+  - SDWebImage/Core (5.21.7)
+  - SDWebImagePhotosPlugin (1.2.1):
+    - SDWebImage/Core (~> 5.10)
+
+DEPENDENCIES:
+  - AFNetworking (from `https://github.com/nativescript-community/AFNetworking`)
+  - lottie-ios (from `https://github.com/farfromrefug/lottie-ios.git`, branch `4.4.1`)
+  - QBImagePickerController (from `https://github.com/smartmobilefactory/QBImagePicker.git`, commit `1e5cd05d3be0c56fd654d36b77768339faf29248`)
+  - SAMKeychain (~> 1.5.3)
+  - SDWebImage (>= 5.21.3)
+  - SDWebImagePhotosPlugin
+
+SPEC REPOS:
+  trunk:
+    - SAMKeychain
+    - SDWebImage
+    - SDWebImagePhotosPlugin
+
+EXTERNAL SOURCES:
+  AFNetworking:
+    :git: https://github.com/nativescript-community/AFNetworking
+  lottie-ios:
+    :branch: 4.4.1
+    :git: https://github.com/farfromrefug/lottie-ios.git
+  QBImagePickerController:
+    :commit: 1e5cd05d3be0c56fd654d36b77768339faf29248
+    :git: https://github.com/smartmobilefactory/QBImagePicker.git
+
+CHECKOUT OPTIONS:
+  AFNetworking:
+    :commit: 12ee65105d15ac6d6208e4c0ac95538c6c5e66c9
+    :git: https://github.com/nativescript-community/AFNetworking
+  lottie-ios:
+    :commit: fd75f8aaa47d9479fc43cf91dd1da557952f6c0c
+    :git: https://github.com/farfromrefug/lottie-ios.git
+  QBImagePickerController:
+    :commit: 1e5cd05d3be0c56fd654d36b77768339faf29248
+    :git: https://github.com/smartmobilefactory/QBImagePicker.git
+
+SPEC CHECKSUMS:
+  AFNetworking: 938645a5b1534a079892ca1b7839cbe542a9c005
+  lottie-ios: b7951abc24db88305f8dc1c6017e9e03e445fd19
+  QBImagePickerController: d54cf93db6decf26baf6ed3472f336ef35cae022
+  SAMKeychain: 483e1c9f32984d50ca961e26818a534283b4cd5c
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
+  SDWebImagePhotosPlugin: aaf5bc35fd49b66876de58c33eeb6e38b50920e5
+
+PODFILE CHECKSUM: 5d0076d988360c42ef5d2c3802cdd3813422fadc
+
+COCOAPODS: 1.16.2

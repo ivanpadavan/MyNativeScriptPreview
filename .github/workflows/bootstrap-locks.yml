@@ -7,14 +7,6 @@ on:
         description: Resolve CocoaPods and cache native platform dependencies without compiling the app
         type: boolean
         default: false
-  push:
-    branches: [main]
-    paths:
-      - package.json
-      - packager/package.json
-      - Gemfile
-      - .node-version
-      - .github/workflows/bootstrap-locks.yml
 
 permissions:
   contents: read

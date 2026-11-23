@@ -30,6 +30,8 @@ PY
   mkdir -p artifacts/shell/Simulator
   tar -xzf artifacts/shell/simulator-app.tar.gz -C artifacts/shell/Simulator
   xcrun simctl install "$device_id" artifacts/shell/Simulator/MyNativeScriptPreview.app
+  xcrun simctl privacy "$device_id" grant location-always org.ivanpadavan.nativescriptpreview
+  xcrun simctl location "$device_id" set '37.3349,-122.0090'
   exit 0
 fi
 

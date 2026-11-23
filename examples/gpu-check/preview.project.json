@@ -1,5 +1,8 @@
 {
+  "id": "examples.gpu-check",
   "name": "GPU Check",
+  "description": "Проверка системного API Background GPU",
+  "color": "#635bff",
   "entry": "src/main.ts",
   "assets": []
 }

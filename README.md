@@ -1,131 +1,120 @@
-# MyNativeScriptPreview
+# NativeScript Launcher
 
-An iOS NativeScript shell for applications transferred as one text package.
-The shell and its compiled native dependencies are installed once. Imported
-projects execute locally without QR codes, npm, or a development server.
+iOS-лаунчер для небольших нативных приложений, которые переносятся одной строкой.
+Добавленный проект остаётся в библиотеке и открывается без сервера и QR-кода.
 
-**Status:** the unsigned device IPA and four real-clipboard/GPU integration
-scenarios passed [CI at d19c4a6](https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215).
-The keyboard accessibility fix is undergoing a separate integration run.
-The first milestone is **GPU Check only**. See [PLAN.md](PLAN.md).
+Начните с **[QUICKSTART.md](QUICKSTART.md)**: Hello World, одна команда сборки и копирование результата в лаунчер.
 
-## One flow
+Текущий этап — библиотека приложений и расширенный каталог плагинов. Готовность
+нового IPA подтверждается только успешным CI и артефактом `preview-verified-*`;
+ход работы и ссылки на проверки находятся в [PLAN.md](PLAN.md).
 
-1. Obtain `gpu-check.preview.txt` from a successful **Preview CI** artifact.
-2. Open it as text and copy **the entire contents**.
-3. Open the installed shell, tap **Вставить проект**, then **Запустить**.
-4. Tap **Проверить GPU**. Use **Оболочка** to return.
+## Один инструмент сборки
 
-The last successfully opened project is saved. After restarting, use
-**Открыть сохранённый проект**; the clipboard and a development server are
-not needed. A failed import does not replace the saved working project.
+Сборщик — самостоятельный Node.js-пакет в `packager/`. Ему не нужны NativeScript
+CLI, Xcode или зависимости самой оболочки. Установка один раз:
 
-The unsigned IPA must first be signed and installed with your own signing tool.
-See [signing and capabilities](ci/signing.md). Signing is separate from this
-project-import flow and requires no credentials in CI.
-
-## First CI bootstrap
-
-No dependency installation, build, generator, linter, or test is run locally.
-Source editing and uploading files are the only local development operations.
-
-1. Publish this source in public `ivanpadavan/MyNativeScriptPreview`, branch `main`.
-2. **Bootstrap dependency locks** resolves `package-lock.json` and `Gemfile.lock`
-   on a macOS runner and uploads the `dependency-locks` artifact. Commit those
-   generated files without resolving them locally.
-3. **Preview CI** builds the shell, exports the GPU example and runs native UI
-   integration tests. The current Core-only shell has no CocoaPods dependencies
-   and produces no `Podfile.lock`. If plugins introduce CocoaPods dependencies,
-   download the generated lock from `native-diagnostics` and commit it as
-   `ci/Podfile.lock`; publication requires an exact committed lock when present.
-4. Release artifact publication requires dependency locks to be committed,
-   simulator scenarios to pass and the unsigned device IPA to verify.
-5. Download `preview-verified-<commit>`. It contains the IPA, GPU package,
-   requested entitlements, capability report, and signing notes.
-
-Node is fixed in `.node-version`; Apple tools and the simulator are fixed in `ci/toolchain.json`.
-Dependency versions become exact through CI-generated lockfiles. When CocoaPods
-is used, resolution must match the committed lock in both simulator and device jobs.
-Simulator tests use ad-hoc signing without an Apple account. The **device IPA**
-is unsigned, built for arm64/iPhoneOS, and contains no provisioning profile.
-
-All test logs and `.xcresult` evidence are retained. The pipeline never runs a
-phone-side dev server. It verifies that the GPU example code and text package
-are not present in the shell app bundle.
-
-## CI cost and reuse
-
-- Documentation-only pushes run just the lightweight change detector on Linux.
-- Dependency jobs run separately from compilation. JS caches are keyed by OS,
-  architecture, Node version, manifest and npm lock; Ruby caches use the Ruby
-  version and Gemfile lock. Install commands run only on exact cache misses.
-- Native platform scaffolding and CocoaPods dependencies have their own cache,
-  separate from shell source and compiled app outputs.
-- The simulator app and unsigned IPA are built only when the shell content key
-  is missing. It covers host sources, the package protocol, native resources,
-  native build/verification scripts, lockfiles and the pinned Apple toolchain.
-- Example, exporter and UI-test edits reuse the exact prebuilt shell. Examples
-  build on Linux. A standalone XCUITest runner controls the preinstalled app by
-  bundle ID and never rebuilds the NativeScript shell.
-- Missing/evicted caches are rebuilt through the dependency/build jobs; no
-  broad restore-prefix fallback accepts stale dependency or native outputs.
-- Internal `native-device-build-only` and `native-simulator-build-only` artifacts
-  are **not** verified. Integration downloads only the simulator app; publication
-  downloads only the device files. Only the
-  downstream `preview-verified-*` artifact is published after integration passes.
-- Native provenance in `capabilities.json` identifies the original build. The
-  successful workflow identifies the current example/test revision that used it.
-
-## Project contract
-
-Every size of project uses the same JSON format:
-
-```json
-{
-  "format": "ns-preview/1",
-  "name": "My App",
-  "entry": "entry.cjs",
-  "files": {
-    "entry.cjs": { "encoding": "utf8", "data": "...compiled CommonJS..." },
-    "assets/logo.png": { "encoding": "base64", "data": "..." }
-  }
-}
+```sh
+npm --prefix packager ci
 ```
 
-The entry exports `createPage(context)`, returning a NativeScript `Page`, and
-optionally `dispose()`. The shell owns `Application.run()` and navigation.
-This is an explicit guest entry contract, not automatic support for arbitrary
-NativeScript applications that call their own `Application.run()`.
+Все примеры используют одну и ту же команду:
 
-- `require('@nativescript/core')` resolves to the shell's actual Core instance.
-- Relative CommonJS and JSON modules resolve within the package. UTF-8 XML,
-  CSS, SVG, and text files can be read with a relative `require`.
-- `context.resourcePath('assets/logo.png')` gives a native filesystem path for
-  a packaged resource. It does not change the shell-global `~/` alias.
-- `context.onDispose(callback)` registers resource cleanup on leaving a project.
-  Direct timer calls in guest modules are tracked; other native/global resources
-  must be released by the project. This is not a security sandbox or a separate
-  process, and `globalThis` can access the shell's native APIs.
-- Exporting bundles application JS dependencies; host packages stay external.
-  Unknown externals fail export, and unknown host modules fail import clearly.
-- The input limit is 16 million characters and 4096 files. Paths must stay
-  within the package. There is no `{xml, js}` shortcut or patch format in v1.
+```sh
+cd examples/tap-counter
+npm run build
+```
 
-In CI, `npm run example:build` compiles the TypeScript GPU example and writes
-the single-line `dist/gpu-check.preview.txt`. It does not build another IPA.
-Other projects use `preview.project.json` with `name`, source `entry`, and an
-optional array of binary `assets`; the same exporter accepts their directory.
+Результат — `dist/tap-counter.preview.txt` внутри проекта. Скопируйте весь текст,
+в лаунчере нажмите **Добавить → Вставить → Добавить**, затем **Открыть** на карточке.
+Сборщик также запускается из любой папки:
 
-## GPU acceptance
+```sh
+node /path/to/MyNativeScriptPreview/packager/cli.mjs build /path/to/project
+```
 
-The supplied `checkGPU` source is preserved in `examples/gpu-check`.
-The iOS 26+ simulator must show a numeric API result as `Background GPU: true`
-or `Background GPU: false`. Missing native metadata must fail the CI case,
-not quietly pass via the unavailable-API fallback.
+JS/TS и обычные установленные JS-зависимости собираются в один CommonJS-модуль.
+`assets` из `preview.project.json` попадают в тот же пакет как Base64. Для отладки
+есть `--sourcemap`; по умолчанию результат минифицирован и не содержит source maps.
+Устройство получает готовый `ns-preview/1`, ручное написание JSON не требуется.
 
-This test does not perform background GPU work or prove entitlement support
-for a physical device or a free Apple ID. Those facts are explicitly marked
-unverified in the capability report.
+## Примеры
 
-The counter, background location, Canvas, and larger plugin catalog are later
-milestones. Work stops at the verified GPU milestone.
+| Папка | Что демонстрирует |
+| --- | --- |
+| `examples/gpu-check` | Исходная проверка `BGTaskScheduler.supportedResources` |
+| `examples/tap-counter` | Тапалка, Haptics, сохранение в личной папке приложения |
+| `examples/background-location` | Запуск/остановка отслеживания и журнал координат |
+| `examples/canvas` | Нативный Canvas 2D, анимация частиц и смена палитры |
+
+Каждый пример содержит одинаковый `npm run build`, маленький
+`preview.project.json` и исходный код. Фоновые обновления на физическом iPhone
+требуют отдельной проверки; симулятор не доказывает реальную работу в фоне.
+
+## Библиотека
+
+- Несколько приложений, обновление по стабильному `id`, копирование и удаление.
+- Пакеты и индекс сохраняются атомарно; неудачный импорт не заменяет рабочую версию.
+- Старый последний сохранённый проект переносится в библиотеку при первом запуске.
+- Приложение открывается в собственной навигации внутри стандартного iOS sheet.
+  Смахните sheet вниз, чтобы вернуться; лаунчер не добавляет кнопок в интерфейс гостя.
+- При закрытии освобождаются отслеживаемые таймеры и обработчики `onDispose`.
+- Обновление пакета сохраняет его папку данных. Удаление удаляет и пакет, и эту папку.
+
+## Нативные модули
+
+Точный список доступен командой `node packager/cli.mjs modules`, в лаунчере и в
+`packager/catalog.json`. Он включает Core и выбранные 24 плагина:
+
+| Группа | Плагины |
+| --- | --- |
+| Графика и интерфейс | Canvas, Canvas SVG/Media, CollectionView, Image, Lottie, GestureHandler, WebView |
+| Устройство | Геолокация, Camera, ImagePicker, Haptics, Contacts, Brightness |
+| Данные и сеть | SQLite, Secure Storage, HTTPS, Background HTTP |
+| Системные действия | Local Notifications, Social Share, Directions, AppAvailability, Email, DateTimePicker |
+
+Доступ к модулям из гостя — обычный `require('@nativescript/…')` или `import` перед
+сборкой. Зависимости из каталога остаются внешними и берутся из IPA. Добавление
+нового нативного плагина требует новой сборки оболочки; изменение JS-приложения — нет.
+Наличие модуля подтверждается интеграционным импортом каждого модуля на iOS;
+это не заменяет проверки всех аппаратных функций на физическом устройстве.
+
+## Контракт приложения
+
+Экспортируйте `createPage(context)`, возвращающий NativeScript `Page`.
+`Application.run()` вызывает лаунчер. `context` предоставляет:
+
+- `resourcePath(name)` — путь к ресурсу внутри пакета;
+- `dataPath` и `appId` — постоянную папку данных и идентификатор записи библиотеки;
+- `onDispose(callback)` — освобождение подписок, геолокации и других ресурсов;
+- `close()` — закрытие текущего приложения;
+- `packages` — список встроенных модулей.
+
+Все приложения работают в одном процессе и используют общие разрешения iOS.
+Папка `dataPath` помогает разделять данные, но не является защитной песочницей.
+Доступ к нативным API имеют доверенные пользователем проекты.
+
+Один пакет ограничен 16 777 216 единицами UTF-16 и 4096 файлами. Это предел нашего
+формата, не гарантия размера системного буфера обмена. Изображения в Base64
+увеличиваются примерно на треть; большой импорт расходует дополнительную память.
+Предпросмотр показывает первые 12 000 символов, исходный пакет сохраняется целиком.
+ZIP-импорт в текущий этап не входит.
+
+## CI и IPA
+
+**Export preview project** запускает тот же Node-сборщик на Linux и публикует
+`.preview.txt`. Зависимости сборщика и проекта готовятся отдельным заданием,
+устанавливаются только при точном промахе кэша; macOS и IPA не участвуют.
+
+**Preview CI** отдельно готовит зависимости, проверяет исходники/пакеты, собирает
+или переиспользует нативную оболочку и запускает интеграционные UI-тесты. Изменения
+только примеров, сборщика и тестов не меняют ключ нативной оболочки, кроме изменений
+её контракта или каталога. Документация пропускает тяжёлые задания.
+
+Lock-файлы npm, сборщика и CocoaPods генерируются в CI и коммитятся. Нативные
+зависимости кэшируются отдельно от готового симулятора и IPA. Приложение симулятора
+передаётся tar-архивом с сохранением прав и symlink. Публикация проверенного IPA
+происходит после интеграции. Установки, сборки и тесты локально агентом не выполняются.
+
+IPA для физического iPhone **неподписанный**. Подпишите его своим инструментом
+перед установкой. [Entitlements и ограничения подписания](ci/signing.md).

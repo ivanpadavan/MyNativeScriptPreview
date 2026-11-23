@@ -10,8 +10,10 @@ target = project.new_target(:ui_test_bundle, 'PreviewUITests', :ios, '16.0')
 group = project.main_group.new_group('Preview integration tests')
 source = group.new_file((root / 'tests/ios/PreviewUITests.swift').to_s)
 target.source_build_phase.add_file_reference(source)
-resource = group.new_file((root / 'dist/gpu-check.preview.txt').to_s)
-target.resources_build_phase.add_file_reference(resource)
+Dir.glob((root / 'dist/*.preview.txt').to_s).each do |filename|
+  resource = group.new_file(filename)
+  target.resources_build_phase.add_file_reference(resource)
+end
 target.build_configurations.each do |configuration|
   configuration.build_settings.merge!({
     'PRODUCT_BUNDLE_IDENTIFIER' => 'org.ivanpadavan.nativescriptpreview.uitests',

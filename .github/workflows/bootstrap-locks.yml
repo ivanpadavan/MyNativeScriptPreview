@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dependency-locks-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CI: 'true'
   NS_CLI_NO_ANALYTICS: '1'

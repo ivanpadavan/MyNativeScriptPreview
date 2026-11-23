@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      native_only:
+        description: Prepare native artifacts only; skip UI integration and verified publication
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -180,6 +185,7 @@ jobs:
           key: ios-platform-v2-xcode${{ needs.scope.outputs.xcode }}-${{ needs.scope.outputs.platform_hash }}
           fail-on-cache-miss: true
       - name: Prepare native sources only on a shell-cache miss
+        timeout-minutes: 6
         if: steps.shell.outputs.cache-hit != 'true'
         run: |
           sudo xcode-select --switch /Applications/Xcode_${{ needs.scope.outputs.xcode }}.app/Contents/Developer
@@ -195,6 +201,7 @@ jobs:
           cp artifacts/MyNativeScriptPreview-unsigned.ipa artifacts/requested-entitlements.plist artifacts/capabilities.json artifacts/shell/
           mkdir -p artifacts/shell/locks
           if [[ -f platforms/ios/Podfile.lock ]]; then cp platforms/ios/Podfile.lock artifacts/shell/locks/Podfile.lock; fi
+          if [[ -f ci/Package.resolved ]]; then cp ci/Package.resolved artifacts/shell/locks/Package.resolved; fi
       - name: Report native reuse
         run: echo 'Native shell cache hit = ${{ steps.shell.outputs.cache-hit }}; key = ${{ needs.scope.outputs.shell_key }}' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
@@ -225,7 +232,7 @@ jobs:
   integration:
     name: Real-paste UI integration
     needs: [scope, dependencies, checks, native]
-    if: needs.scope.outputs.work == 'true'
+    if: needs.scope.outputs.work == 'true' && inputs.native_only != true
     runs-on: macos-26
     env:
       PREVIEW_SIMULATOR_RUNTIME: ${{ needs.scope.outputs.simulator_runtime }}
@@ -288,7 +295,7 @@ jobs:
   publish:
     name: Publish verified launcher artifacts
     needs: [scope, checks, native, integration]
-    if: needs.scope.outputs.work == 'true'
+    if: needs.scope.outputs.work == 'true' && inputs.native_only != true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -303,10 +310,12 @@ jobs:
           path: dist
       - name: Require committed native dependency resolution
         run: |
-          if [[ -f artifacts/shell/locks/Podfile.lock ]]; then
-            test -f ci/Podfile.lock
-            cmp ci/Podfile.lock artifacts/shell/locks/Podfile.lock
-          fi
+          for lock in Podfile.lock Package.resolved; do
+            if [[ -f "artifacts/shell/locks/$lock" ]]; then
+              test -f "ci/$lock"
+              cmp "ci/$lock" "artifacts/shell/locks/$lock"
+            fi
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: preview-verified-${{ github.sha }}

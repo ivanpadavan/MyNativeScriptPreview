@@ -32,6 +32,21 @@ PY
   xcrun simctl install "$device_id" artifacts/shell/Simulator/MyNativeScriptPreview.app
   xcrun simctl privacy "$device_id" grant location-always org.ivanpadavan.nativescriptpreview
   xcrun simctl location "$device_id" set '37.3349,-122.0090'
+  # Seed only the old on-disk save, outside the application bundle. The smoke
+  # case still imports its GPU app through the real clipboard; a separate case
+  # verifies upgrade migration and that deletion does not resurrect this save.
+  python3 - <<'PY'
+import json, os, pathlib, subprocess
+container = pathlib.Path(subprocess.check_output([
+    'xcrun', 'simctl', 'get_app_container', os.environ['PREVIEW_DEVICE_ID'],
+    'org.ivanpadavan.nativescriptpreview', 'data'], text=True).strip())
+packet = json.loads(pathlib.Path('dist/gpu-check.preview.txt').read_text())
+packet.pop('id', None)
+packet['name'] = 'Legacy GPU'
+destination = container / 'Documents/preview/last.preview.txt'
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_text(json.dumps(packet, ensure_ascii=False))
+PY
   exit 0
 fi
 

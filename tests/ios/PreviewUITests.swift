@@ -118,6 +118,10 @@ final class PreviewUITests: XCTestCase {
         importPackage(try fixture())
         importPackage(try fixture("tap-counter"))
         XCTAssertTrue(app.buttons["open-app-GPU Check"].exists)
+        let library = XCTAttachment(screenshot: app.screenshot())
+        library.name = "Launcher library with independently imported apps"
+        library.lifetime = .keepAlways
+        add(library)
         open("Tap Counter")
         XCTAssertTrue(app.buttons["counter-reset"].waitForExistence(timeout: 10))
         app.buttons["counter-reset"].tap()
@@ -139,6 +143,21 @@ final class PreviewUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["counter-value"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["counter-value"].label, "3")
         returnToLibrary()
+    }
+
+    func testLegacyLastProjectMigratesAndDoesNotResurrectAfterDeletion() throws {
+        open("Legacy GPU")
+        checkGPU()
+        returnToLibrary()
+        app.buttons["delete-app-Legacy GPU"].tap()
+        app.alerts.buttons["Удалить"].tap()
+        let gone = NSPredicate { _, _ in !self.app.buttons["open-app-Legacy GPU"].exists }
+        expectation(for: gone, evaluatedWith: app)
+        waitForExpectations(timeout: 5)
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["open-app-Legacy GPU"].exists)
     }
 
     func testInvalidImportKeepsPreviousWorkingProject() throws {

@@ -1,4 +1,4 @@
-import { Button, GridLayout, Label, Page, StackLayout } from '@nativescript/core';
+import { Button, File, GridLayout, Label, Page, StackLayout } from '@nativescript/core';
 import { Canvas } from '@nativescript/canvas';
 
 export function createPage(context) {
@@ -29,7 +29,7 @@ export function createPage(context) {
   let tick = 0;
   let disposed = false;
   let ctx;
-  const colors = ['#a981ff', '#5ee1d4', '#ffa8bc'];
+  const colors = JSON.parse(File.fromPath(context.resourcePath('assets/palette.json')).readTextSync());
   function paint() {
     const width = canvas.width;
     const height = canvas.height;

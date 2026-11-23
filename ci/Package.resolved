@@ -1,0 +1,24 @@
+{
+  "originHash" : "d5df9c539720a87d387150edecae29a395ead528cc141dc1a4e18e2510604d0a",
+  "pins" : [
+    {
+      "identity" : "font-manager",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NativeScript/font-manager.git",
+      "state" : {
+        "revision" : "95472d4582ccbcf6e7e2c5c48db4736bc7823d6b",
+        "version" : "1.0.24"
+      }
+    },
+    {
+      "identity" : "ios-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NativeScript/ios-spm.git",
+      "state" : {
+        "revision" : "33605a91197dc86bd9f15fecaad6e897223caa8a",
+        "version" : "9.1.1"
+      }
+    }
+  ],
+  "version" : 3
+}

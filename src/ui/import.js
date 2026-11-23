@@ -75,8 +75,10 @@ function createImport(onImported) {
     try {
       const project = parsePackage(raw);
       const apps = await storage.listApps();
-      const previous = apps.find((item) => project.id ? item.packageId === project.id : item.name === project.name);
+      const previous = (project.id && apps.find((item) => item.packageId === project.id)) ||
+        apps.find((item) => !item.packageId && item.name === project.name);
       let replaceId;
+      let asCopy = false;
       if (previous) {
         const choice = await action({
           title: `«${project.name}» уже есть`, cancelButtonText: 'Отмена',
@@ -84,14 +86,15 @@ function createImport(onImported) {
         });
         if (choice === 'Отмена') return;
         if (choice === 'Обновить') replaceId = previous.id;
+        if (choice === 'Сохранить копию') asCopy = true;
       }
       const appId = replaceId || NSUUID.UUID().UUIDString;
       directory = await storage.stage(project);
       // Validate entry/module resolution before replacing an existing app.
-      guest = createGuest(project, directory, { appId, dataPath: storage.dataDirectory(appId) });
+      guest = createGuest(project, directory, { appId, dataPath: storage.dataDirectory(appId), validateOnly: true });
       guest.dispose();
       guest = null;
-      const record = await storage.importApp(raw, replaceId, appId);
+      const record = await storage.importApp(raw, replaceId, appId, asCopy);
       if (onImported) onImported(record);
       page.frame.goBack();
     } catch (error) {

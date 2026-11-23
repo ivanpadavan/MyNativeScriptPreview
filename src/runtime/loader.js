@@ -25,6 +25,7 @@ function createGuest(project, resourceDirectory, options = {}) {
   let page;
   let entry;
   let disposed = false;
+  let invoked = false;
   const cleanups = new Set();
   const timers = new Map();
 
@@ -102,7 +103,7 @@ function createGuest(project, resourceDirectory, options = {}) {
     disposed = true;
     for (const [id, clear] of timers) clear(id);
     timers.clear();
-    try { if (entry && typeof entry.dispose === 'function') entry.dispose(); }
+    try { if (invoked && entry && typeof entry.dispose === 'function') entry.dispose(); }
     catch (error) { console.error('Guest dispose:', error); }
     for (const callback of cleanups) {
       try { callback(); } catch (error) { console.error('Guest cleanup:', error); }
@@ -114,6 +115,8 @@ function createGuest(project, resourceDirectory, options = {}) {
   try {
     entry = load(project.entry);
     if (typeof entry.createPage !== 'function') throw new Error('Точка входа должна экспортировать createPage(context).');
+    if (options.validateOnly) return { dispose };
+    invoked = true;
     page = entry.createPage(context);
     if (!(page instanceof core.Page)) throw new Error('createPage(context) должна вернуть NativeScript Page.');
     return { page, dispose };

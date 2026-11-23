@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { build } from 'esbuild';
 import { createRequire } from 'node:module';
+import { realpathSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -22,6 +23,7 @@ export async function buildProject(directory, options = {}) {
     external: catalog.packages, sourcemap: options.sourcemap ? 'inline' : false,
     sourcesContent: Boolean(options.sourcemap), minify: !options.sourcemap,
     legalComments: 'none', metafile: true, logLevel: 'silent',
+    define: { 'process.env.NODE_ENV': '"production"' },
     loader: { '.xml': 'text', '.css': 'text', '.svg': 'text' },
   });
   const imports = new Set();
@@ -72,7 +74,7 @@ async function main(args) {
   await buildProject(args[1], options);
 }
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url) {
   main(process.argv.slice(2)).catch((error) => {
     const detail = error.errors?.map((item) => `${item.location ? `${item.location.file}:${item.location.line}: ` : ''}${item.text}`).join('\n');
     console.error(detail || error.message);

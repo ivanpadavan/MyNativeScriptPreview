@@ -41,7 +41,7 @@ npm run preview:build -- ./hello
 Все примеры используют этот же сборщик: `cd examples/tap-counter && npm run build`.
 Сам сборщик можно вызвать из любой папки: `node /путь/к/репозиторию/packager/cli.mjs build /путь/к/проекту`.
 
-- JS и TypeScript поддерживаются; обычные JS-зависимости устанавливайте в своём проекте — сборщик включит их в пакет.
+- JS и TypeScript поддерживаются; JS-зависимости устанавливайте в своём проекте — сборщик включит их в пакет. Библиотеки не должны требовать Node.js API, DOM или отсутствующий нативный плагин.
 - Доступные нативные модули: `node packager/cli.mjs modules`. Они уже встроены в IPA; добавление нового нативного плагина требует обновления лаунчера.
 - Картинки перечислите в `assets` в `preview.project.json`; путь внутри приложения получите через `createPage(context)` → `context.resourcePath('assets/picture.png')`.
 - `Application.run()` не вызывайте. Верните `Page` из `createPage()`. Для своих данных используйте `context.dataPath`, для освобождения ресурсов — `context.onDispose(callback)`.

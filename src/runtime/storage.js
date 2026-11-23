@@ -73,13 +73,14 @@ function readApp(id) {
   });
 }
 
-function importApp(raw, replaceId, newId) {
+function importApp(raw, replaceId, newId, asCopy = false) {
   return serial(async () => {
     const project = parsePackage(raw);
     const apps = await loadIndex();
     const previous = replaceId ? apps.find((app) => app.id === replaceId) : null;
     if (replaceId && !previous) throw new Error('Приложение для обновления не найдено.');
     const record = recordFor(raw, project, previous || (newId ? { id: uuid(newId), createdAt: Date.now(), lastOpenedAt: 0 } : null));
+    if (asCopy) { record.name = `${project.name} (копия)`; record.packageId = null; }
     const next = previous ? apps.map((app) => app.id === replaceId ? record : app) : [...apps, record];
     try { writeIndex(next); }
     catch (error) {

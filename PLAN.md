@@ -29,6 +29,7 @@
 
 ## done
 
+- [x] Native plugin dependencies and standalone builder lockfiles resolved in CI without compiling JS or a native application: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45089652674 (`9953f91`). The generated npm/packager/CocoaPods locks are committed on `feature/launcher`. Native module availability and launcher behavior still require the integration run.
 - [x] Shared package contract, exporter, offline loader, native paste shell, GPU example, unsigned device IPA, and all four integration scenarios passed at `d19c4a6`: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215 . The verified artifact includes the IPA, GPU text package, entitlement request, capability report, and signing notes; test logs and xcresults are separate artifacts. The suite exercises real clipboard import, numeric native GPU response, repeat import, restart with empty clipboard, and failed imports preserving the working project.
 - [x] CocoaPods lock applicability checked in the successful native run above: the Core-only shell has no Podfile/CocoaPods dependencies and produces no Podfile.lock. The pipeline requires an exact committed `ci/Podfile.lock` if future plugins produce one.
 - [x] Native device IPA verification and all four real-clipboard/GPU/import integration scenarios passed: https://github.com/ivanpadavan/MyNativeScriptPreview/actions/runs/45082008215 (`d19c4a6`). Final cache-reuse validation and publication evidence are still pending below the milestone boundary.
